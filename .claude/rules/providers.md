@@ -47,6 +47,10 @@ of each provider made per enable) then `retrieveUserQuotaSummary`.
 
 * It answers **403** to a User-Agent not starting `antigravity`, which is why
   `Http` sets no session-wide agent and each provider passes its own.
+* **The plan is `paidTier.name`** ("Google AI Pro") in the `loadCodeAssist`
+  answer. `currentTier` stays `free-tier` on a subscription and its `name` is only
+  "Antigravity", so it is the fallback, humanised. Seen on a live Pro account on
+  2026-10-04; the plan is asked for with the project, so it is kept as long as that is.
 * **The response says what is LEFT**; everything else here shows USED. Its own
   "Weekly Limit Remaining" label would lie over the inverted figure, so labels
   are built from window and model family. A parser check pins 0, 1 and 0.35.
