@@ -142,7 +142,7 @@ export class AiUsageApp {
                 indicator.menu.close(true);
                 this._extension.openPreferences();
             }},
-        ]);
+        ], id => this._settings.set_string('selected-provider', id));
         indicator.menu.connect('open-state-changed', (_menu, open) => {
             if (open)
                 this._refreshIfStale();
@@ -226,6 +226,7 @@ export class AiUsageApp {
             showPercent: s.get_boolean('show-percent'),
             hideUnavailable: s.get_boolean('hide-unavailable'),
             limit: s.get_string('primary-limit'),
+            selected: s.get_string('selected-provider'),
             tabs: s.get_string('tab-position'),
             resetFormat: s.get_string('reset-format'),
             clock: this._interface.get_string('clock-format'),

@@ -33,8 +33,6 @@ SHOTS_SETTLE=35
 # picture is of the wallpaper. Re-measure with 'start --stand-in --headless' and
 # a 'do "click 1368 16" "shot FILE 0 0 1600 36"'.
 SHOTS_BUTTON="1368 16"
-# The pop-up opens on the provider the button's figure comes from; this is Claude's tab.
-SHOTS_CLAUDE_TAB="1168 68"
 # The preferences window opens centred, so its tabs are at fixed points too.
 SHOTS_TAB_BUTTON="677 201"
 SHOTS_TAB_READINGS="799 201"
@@ -99,7 +97,7 @@ shots_take() {
     fi
 
     info "Opening the pop-up..."
-    shots_do "click $SHOTS_BUTTON" "wait 1.5" "click $SHOTS_CLAUDE_TAB" "wait 1" || return 1
+    shots_do "click $SHOTS_BUTTON" "wait 1.5" || return 1
     # The recording indicator outlives the process that asked for it by a few
     # seconds, so wait it out rather than photograph the shell mid-tidy. Six is
     # measured: it was still there at four and gone by six.

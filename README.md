@@ -4,8 +4,8 @@ Shows how much of your AI subscriptions' rate limits you have used, as a button 
 top bar: the current session, the week, and the week for each model, with the time each
 one resets.
 
-![The pop-up under the top-bar button reading "AI 40%", with a tab each for Claude, Codex and
-Antigravity, Claude's chosen: a Max (5x) plan, the 5-hour limit at 12%, resetting in
+![The pop-up under the top-bar button reading "AI 12%", with a tab each for Claude, Codex and
+Antigravity, Claude's selected: a Max (5x) plan, the 5-hour limit at 12%, resetting in
 2 hr 21 min; the week across all models at 34% and the week for Opus at 41%, both
 resetting Thu 15:00, each with a bar; "Extra usage · off"
 with 0.00 USD used; and "Where this week went: Claude Code 88% · Chats 12%". The tab row
@@ -13,11 +13,10 @@ ends in a refresh button and an arrow to the preferences.](docs/screenshots/pop-
 
 ## What it does
 
-- **One button**, reading "AI" and the highest figure among your subscriptions, each worked
-  out from its current session. It turns amber at 80% and red at 95%, and both figures can
-  be changed.
-- **A tab per subscription in its pop-up**, at the top or the bottom, opening on the one the
-  button's figure comes from. Each lists the session, the week and the week for each model,
+- **One button**, reading "AI" and the current-session figure of the subscription whose tab
+  is selected. It turns amber at 80% and red at 95%, and both figures can be changed.
+- **A tab per subscription in its pop-up**, at the top or the bottom. Choosing one changes
+  the button's figure and stays chosen. Each lists the session, the week and the week for each model,
   with a bar and the time it resets, plus paid extra usage and where the week's usage
   went, when the provider reports them.
 - **The provider's own figures**, from the request its command-line tool makes for its
@@ -29,7 +28,7 @@ ends in a refresh button and an arrow to the preferences.](docs/screenshots/pop-
 - **Your choice of figure and place**: the session, the week or whichever is highest, at
   the left, centre or right of the top bar.
 
-![The right of the top bar: the button reading "AI 40%", beside the system icons.](docs/screenshots/top-bar-cropped.png)
+![The right of the top bar: the button reading "AI 12%", beside the system icons.](docs/screenshots/top-bar-cropped.png)
 
 ## You never sign in here
 
@@ -105,9 +104,9 @@ To update, `git pull && make install`, then log out and back in. To remove it,
 
 | Button | Readings | Providers |
 | --- | --- | --- |
-| ![The Button page: which figure each provider contributes, set to Current session; switches for showing the percentage and hiding a provider with nothing to show; whether the tabs sit at the top or the bottom; and how reset times are worded.](docs/screenshots/preferences-button.png) | ![The Readings page: 300 seconds between readings, and Notify at 0, which turns notifications off.](docs/screenshots/preferences-readings.png) | ![The Providers page: Claude Code found at /usr/bin/claude, the Codex CLI found at /usr/bin/codex, and the Antigravity CLI (agy) found at /usr/bin/agy, each with a switch.](docs/screenshots/preferences-providers.png) |
+| ![The Button page: which figure the button shows, set to Current session; switches for showing the percentage and hiding a provider with nothing to show; whether the tabs sit at the top or the bottom; and how reset times are worded.](docs/screenshots/preferences-button.png) | ![The Readings page: 300 seconds between readings, and Notify at 0, which turns notifications off.](docs/screenshots/preferences-readings.png) | ![The Providers page: Claude Code found at /usr/bin/claude, the Codex CLI found at /usr/bin/codex, and the Antigravity CLI (agy) found at /usr/bin/agy, each with a switch.](docs/screenshots/preferences-providers.png) |
 
-- **Button**: the figure each provider contributes, whether the percentage is shown beside
+- **Button**: the figure the button shows, whether the percentage is shown beside
   "AI", whether the tabs sit at the top or the bottom of the pop-up, how reset times are
   worded, which end of the top bar the button sits in and where, and the figures at which
   it turns amber and red.

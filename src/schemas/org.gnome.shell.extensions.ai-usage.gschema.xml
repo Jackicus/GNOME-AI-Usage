@@ -25,8 +25,8 @@
 
         <key name="primary-limit" enum="org.gnome.shell.extensions.ai-usage.primary-limit">
             <default>'session'</default>
-            <summary>Which limit each provider contributes to the button</summary>
-            <description>"session": the current session; "weekly": the week's whole-account limit; each falls back to the highest. "highest": the limit closest to being used up. The button shows the highest of the providers' figures.</description>
+            <summary>Which limit the button shows</summary>
+            <description>"session": the current session; "weekly": the week's whole-account limit; each falls back to the highest. "highest": the limit closest to being used up. The button shows it for the provider whose tab is selected.</description>
         </key>
         <key name="show-percent" type="b">
             <default>true</default>
@@ -52,6 +52,11 @@
             <description>"auto": a countdown under a day away, then a weekday and time. "relative": the countdown. "absolute": the time. "both": the countdown, then the time in brackets.</description>
         </key>
 
+        <key name="selected-provider" type="s">
+            <default>''</default>
+            <summary>The provider whose tab was chosen last</summary>
+            <description>The pop-up opens on this provider's tab and the button shows its figure. Empty, or a provider with no tab, means the first tab.</description>
+        </key>
         <key name="tab-position" enum="org.gnome.shell.extensions.ai-usage.tab-position">
             <default>'top'</default>
             <summary>Where the provider tabs sit in the pop-up</summary>
