@@ -66,15 +66,16 @@ log on (`lib/log.js`'s `setVerbose`) and names its stage after a checksum of
 ## How it behaves
 
 * **One button, `AI` and a percentage**, while a provider is live (`enabled` and
-  its CLI on `PATH`); the percentage is the highest of the live providers'
-  figures, each picked by `primary-limit`, and tints the label by its severity.
-  `show-percent` off leaves `AI`. No icon ships: the providers' marks need their
+  its CLI on `PATH`); the percentage is the selected tab's figure, picked by
+  `primary-limit`, and tints the label by its severity. `show-percent` off leaves
+  `AI`. No icon ships: the providers' marks need their
   owners' written permission (README, Credits and trademarks), so the tabs carry
   the names and nothing is drawn after a mark.
 * **The pop-up has a tab per live provider**, at the top or, by `tab-position`,
-  the bottom, with refresh and preferences at the end of the tab row. It opens on
-  the provider the button's figure comes from; a click is for as long as it stays
-  open. `hide-unavailable` (default on) drops the tab of a provider with no figure,
+  the bottom, with refresh and preferences at the end of the tab row. A click on a
+  tab writes `selected-provider`, which the next redraw reads back: the pop-up opens
+  on that tab and the button shows its figure; with none chosen, or its tab
+  hidden, the first tab is selected. `hide-unavailable` (default on) drops the tab of a provider with no figure,
   or no reading yet, and the button with the last tab; it is still read, so it
   returns when the tool refreshes its login. `_syncProviders()` diffs against the
   live list, so toggling needs no restart.
@@ -101,8 +102,8 @@ log on (`lib/log.js`'s `setVerbose`) and names its stage after a checksum of
 ## Settings
 
 Global keys: `primary-limit` (`session` default, `highest`, `weekly`),
-`show-percent`, `hide-unavailable`, `renew-login`, `reset-format`, `tab-position`
-(`top` default, `bottom`), `panel-box`, `panel-index`, `poll-seconds`,
+`show-percent`, `hide-unavailable`, `renew-login`, `reset-format`,
+`selected-provider` (the tab chosen last), `tab-position` (`top` default, `bottom`), `panel-box`, `panel-index`, `poll-seconds`,
 `warn-percent`, `critical-percent`, `notify-percent`.
 
 **Per-provider keys are a relocatable schema** at
@@ -166,7 +167,7 @@ extension's own:
 Input is a RemoteDesktop session whose recording indicator stays in the top
 bar until the driver exits, so a click and its photo are separate `do` calls,
 and the click coordinates in `./scripts/nested.d/shots.sh`
-(`SHOTS_BUTTON`, `SHOTS_CLAUDE_TAB`, `SHOTS_TAB_*`) are measured with the indicator present.
+(`SHOTS_BUTTON`, `SHOTS_TAB_*`) are measured with the indicator present.
 Antigravity's keyring lookup times out on the nested bus after about 25 s
 (`SHOTS_SETTLE`, and an expected "keyring lookup failed" log line); under
 `--stand-in` it then falls back to the stand-in token file, and under a plain

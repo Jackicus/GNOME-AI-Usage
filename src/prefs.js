@@ -25,10 +25,10 @@ export default class AiUsagePreferences extends ExtensionPreferences {
 
         const shown = new Adw.PreferencesGroup({
             title: 'What it shows',
-            description: 'The pop-up always lists every limit. This is the single figure on the button itself: '
-                + "the highest of each provider's.",
+            description: 'The pop-up always lists every limit. This is the single figure on the button itself, '
+                + 'for the provider whose tab is selected.',
         });
-        shown.add(comboRow(settings, 'primary-limit', "Each provider's figure", [
+        shown.add(comboRow(settings, 'primary-limit', 'Figure on the button', [
             ['highest', 'Whichever is highest'],
             ['session', 'Current session'],
             ['weekly', 'This week'],

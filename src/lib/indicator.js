@@ -38,14 +38,15 @@ function explain(reading) {
     }
 }
 
-// The figure a provider contributes to the button: its primary limit, else its worst.
+// The figure the button shows for a provider: its primary limit, else its worst.
 function figureOf(reading, limit) {
     return reading?.ok ? reading.limits.find(l => l.id === PRIMARY_LIMIT[limit]) ?? reading.worst : null;
 }
 
 export const UsageIndicator = GObject.registerClass(
 class UsageIndicator extends PanelMenu.Button {
-    _init(actions) {
+    // select(id) is called with the provider whose tab is chosen.
+    _init(actions, select) {
         super._init(0.5, 'AI usage', false);
 
         // menu.box is the actor that gets `.popup-menu-content`, so the width goes there.
@@ -58,10 +59,10 @@ class UsageIndicator extends PanelMenu.Button {
         });
         this.add_child(this._label);
 
+        this._select = select;
         this._rows = [];
-        this._top = null;
-        this._options = null;
         this._selected = null;
+        this._options = null;
         this._tabIds = '';
 
         this._tabs = new St.BoxLayout({style_class: 'ai-usage-tabs', x_expand: true});
@@ -69,51 +70,40 @@ class UsageIndicator extends PanelMenu.Button {
         this._section = new PopupMenu.PopupMenuSection();
         this.menu.addMenuItem(this._tabsItem);
         this.menu.addMenuItem(this._section);
-
-        // The pop-up opens on the provider the button's figure comes from.
-        this.menu.connect('open-state-changed', (_menu, open) => {
-            if (open) {
-                this._selected = null;
-                this._renderMenu();
-            }
-        });
     }
 
     // entries: [{id, name, reading}], one per live provider; a reading is null
     // until its provider has answered. options: showPercent, hideUnavailable,
-    // limit (primary-limit), tabs ('top' or 'bottom'), resetFormat, clock
-    // ('12h' or '24h').
+    // limit (primary-limit), selected (the provider chosen last; the first tab
+    // when it has none), tabs ('top' or 'bottom'), resetFormat, clock ('12h' or
+    // '24h').
     setReadings(entries, options) {
         const rows = entries.map(entry => ({...entry, figure: figureOf(entry.reading, options.limit)}));
-        this._top = rows.filter(row => row.figure).sort((a, b) => b.figure.percent - a.figure.percent)[0];
         this._rows = options.hideUnavailable ? rows.filter(row => row.figure) : rows;
+        this._selected = this._rows.find(row => row.id === options.selected) ?? this._rows[0];
         this._options = options;
 
-        this._renderPanel(rows);
+        this._renderPanel();
         this.menu.moveMenuItem(this._tabsItem, options.tabs === 'top' ? 0 : 1);
-        if (this._rows.length)
+        if (this._selected)
             this._renderMenu();
     }
 
-    _renderPanel(rows) {
-        const {showPercent, hideUnavailable} = this._options;
+    _renderPanel() {
+        const row = this._selected;
 
-        this.container.visible = !hideUnavailable || !!this._top;
-        if (!this.container.visible)
+        this.container.visible = !!row;
+        if (!row)
             this.menu.close(true);
 
         // No figure: amber when the fix is the user's (signing in again).
-        const broken = rows.some(row => row.reading?.status === Status.EXPIRED || row.reading?.status === Status.SIGNED_OUT);
-        const severity = this._top ? this._top.figure.severity : broken ? Severity.WARNING : Severity.NORMAL;
+        const broken = row?.reading?.status === Status.EXPIRED || row?.reading?.status === Status.SIGNED_OUT;
+        const severity = row?.figure ? row.figure.severity : broken ? Severity.WARNING : Severity.NORMAL;
         for (const cls of Object.values(SEVERITY_CLASS))
             this._label.remove_style_class_name(cls);
         this._label.add_style_class_name(SEVERITY_CLASS[severity]);
 
-        this._label.set_text(this._top && showPercent ? `AI ${formatPercent(this._top.figure.percent)}` : 'AI');
-    }
-
-    _selectedRow() {
-        return this._rows.find(row => row.id === this._selected) ?? this._top ?? this._rows[0];
+        this._label.set_text(row?.figure && this._options.showPercent ? `AI ${formatPercent(row.figure.percent)}` : 'AI');
     }
 
     // The tabs are rebuilt only when the providers shown change, so a redraw
@@ -125,17 +115,13 @@ class UsageIndicator extends PanelMenu.Button {
             this._tabs.destroy_all_children();
             for (const row of this._rows) {
                 const tab = new St.Button({label: row.name, style_class: 'button flat ai-usage-tab', can_focus: true});
-                tab.connect('clicked', () => {
-                    this._selected = row.id;
-                    this._renderMenu();
-                });
+                tab.connect('clicked', () => this._select(row.id));
                 this._tabs.add_child(tab);
             }
         }
 
-        const selected = this._selectedRow();
         this._tabs.get_children().forEach((tab, i) => {
-            tab.checked = this._rows[i] === selected;
+            tab.checked = this._rows[i] === this._selected;
         });
     }
 
@@ -143,7 +129,7 @@ class UsageIndicator extends PanelMenu.Button {
         this._renderTabs();
         this._section.removeAll();
 
-        const {reading} = this._selectedRow();
+        const {reading} = this._selected;
         if (reading)
             this._addReading(reading, this._options);
         else
