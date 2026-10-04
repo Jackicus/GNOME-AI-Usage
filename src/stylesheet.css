@@ -69,8 +69,7 @@
     font-size: 0.95em;
 }
 
-/* The shell's padding for the arrow at the end of a .quick-slider row, 2px
-   down so the row does not grow. A negative margin breaks the menu's width. */
+/* The shell's padding for a slider row's end button, 2px less tall so the row does not grow. */
 .ai-usage-tabs-box .icon-button {
     padding: 2px 6px;
 }

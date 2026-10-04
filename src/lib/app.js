@@ -129,13 +129,9 @@ export class AiUsageApp {
         this._watchCredentials();
     }
 
-    // addToStatusArea claims the role until the indicator is destroyed, so a
-    // button already placed is built afresh to be placed again. -1, or an
-    // index past the end of the box, appends.
+    // addToStatusArea holds the role until the indicator is destroyed, so a placed button is rebuilt to move.
     _place() {
         this._indicator?.destroy();
-        // Refresh reads every provider and leaves the pop-up open to watch the
-        // figures change.
         const indicator = new UsageIndicator(() => this.refresh(),
             id => this._settings.set_string('selected-provider', id));
         indicator.menu.connect('open-state-changed', (_menu, open) => {
@@ -301,7 +297,7 @@ export class AiUsageApp {
 
         const wording = {format: this._settings.get_string('reset-format'), clock: this._interface.get_string('clock-format')};
         for (const {reading} of this._live()) {
-            if (reading?.status !== Status.OK)
+            if (!reading?.ok)
                 continue;
             for (const limit of reading.limits) {
                 const key = `${reading.providerId}:${limit.id}`;
@@ -311,7 +307,7 @@ export class AiUsageApp {
                     this._notified.delete(key);
                     continue;
                 }
-                if (this._notified.has(key) && this._notified.get(key) === window)
+                if (this._notified.get(key) === window)
                     continue;
                 this._notified.set(key, window);
 

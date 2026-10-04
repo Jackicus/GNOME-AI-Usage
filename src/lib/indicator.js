@@ -15,12 +15,6 @@ const DIM_OPACITY = 160;
 // primary-limit -> the limit id it asks for; anything else shows the worst.
 const PRIMARY_LIMIT = {session: 'session', weekly: 'weekly_all'};
 
-const SEVERITY_CLASS = {
-    [Severity.NORMAL]: 'ai-usage-normal',
-    [Severity.WARNING]: 'ai-usage-warning',
-    [Severity.CRITICAL]: 'ai-usage-critical',
-};
-
 function explain(reading) {
     switch (reading.status) {
     case Status.SIGNED_OUT:
@@ -29,12 +23,10 @@ function explain(reading) {
         return `The stored login has expired. Run ${reading.cli} once and it will refresh itself.`;
     case Status.UNSUPPORTED:
         return reading.message ?? 'This login has no subscription limits to show.';
-    case Status.UNAVAILABLE:
+    default:
         return reading.message
             ? `Usage could not be read: ${reading.message}`
             : 'Usage could not be read just now.';
-    default:
-        return 'Usage could not be read.';
     }
 }
 
@@ -45,8 +37,6 @@ function figureOf(reading, limit) {
 
 export const UsageIndicator = GObject.registerClass(
 class UsageIndicator extends PanelMenu.Button {
-    // refresh() is called by the refresh button, select(id) with the provider
-    // whose tab is chosen.
     _init(refresh, select) {
         super._init(0.5, 'AI usage', false);
 
@@ -73,11 +63,8 @@ class UsageIndicator extends PanelMenu.Button {
         this.menu.addMenuItem(this._section);
     }
 
-    // entries: [{id, name, reading}], one per live provider; a reading is null
-    // until its provider has answered. options: showPercent, hideUnavailable,
-    // limit (primary-limit), selected (the provider chosen last; the first tab
-    // when it has none), tabs ('top' or 'bottom'), resetFormat, clock ('12h' or
-    // '24h').
+    // entries: [{id, name, reading}] per live provider; reading is null until it answers.
+    // options: the object built in app.js's _redraw().
     setReadings(entries, options) {
         const rows = entries.map(entry => ({...entry, figure: figureOf(entry.reading, options.limit)}));
         this._rows = options.hideUnavailable ? rows.filter(row => row.figure) : rows;
@@ -92,19 +79,17 @@ class UsageIndicator extends PanelMenu.Button {
 
     _renderPanel() {
         const row = this._selected;
-
         this.container.visible = !!row;
-        if (!row)
+        if (!row) {
             this.menu.close(true);
+            return;
+        }
 
         // No figure: amber when the fix is the user's (signing in again).
-        const broken = row?.reading?.status === Status.EXPIRED || row?.reading?.status === Status.SIGNED_OUT;
-        const severity = row?.figure ? row.figure.severity : broken ? Severity.WARNING : Severity.NORMAL;
-        for (const cls of Object.values(SEVERITY_CLASS))
-            this._label.remove_style_class_name(cls);
-        this._label.add_style_class_name(SEVERITY_CLASS[severity]);
-
-        this._label.set_text(row?.figure && this._options.showPercent ? `AI ${formatPercent(row.figure.percent)}` : 'AI');
+        const broken = row.reading?.status === Status.EXPIRED || row.reading?.status === Status.SIGNED_OUT;
+        const severity = row.figure ? row.figure.severity : broken ? Severity.WARNING : Severity.NORMAL;
+        this._label.style_class = `ai-usage-panel-label ai-usage-${severity}`;
+        this._label.set_text(row.figure && this._options.showPercent ? `AI ${formatPercent(row.figure.percent)}` : 'AI');
     }
 
     // The tabs are rebuilt only when the providers shown change, so a redraw
@@ -163,9 +148,7 @@ class UsageIndicator extends PanelMenu.Button {
     }
 });
 
-// The shell's `icon-button flat`, as at the end of a Quick Settings slider row.
-// Dimmed on the icon rather than the button, so the hover background stays full,
-// and lit again on hover and focus, which the theme does not do for opacity.
+// The shell's icon-button, dimmed on the icon so the hover background stays full; lit on hover and focus.
 function refreshButton(refresh) {
     const icon = new St.Icon({icon_name: 'view-refresh-symbolic', opacity: DIM_OPACITY});
     const button = new St.Button({
@@ -181,7 +164,7 @@ function refreshButton(refresh) {
     button.connect('notify::hover', light);
     button.connect('key-focus-in', light);
     button.connect('key-focus-out', light);
-    button.connect('clicked', () => refresh());
+    button.connect('clicked', refresh);
     return button;
 }
 
@@ -189,7 +172,6 @@ function inertItem(styleClass) {
     return new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false, style_class: styleClass});
 }
 
-// The tabs, and the refresh button hard right.
 function tabsItem(tabs, refresh) {
     const item = inertItem('ai-usage-tabs-row');
     const row = new St.BoxLayout({style_class: 'ai-usage-tabs-box', x_expand: true});
@@ -200,10 +182,8 @@ function tabsItem(tabs, refresh) {
     return item;
 }
 
-// Name, dimmed reset (or detail), percentage, bar underneath, as Claude Code's
-// /usage. The name is the one expanding column and the figure has a fixed-width
-// cell, so the columns line up from row to row. A row with no percentage has no
-// figure and no bar: an empty bar would claim a 0% the service never said.
+// Name, dimmed reset, percentage, bar underneath, as Claude Code's /usage. A row with no
+// percentage has no figure and no bar: an empty bar would claim a 0% the service never said.
 function limitItem(limit, resetFormat, clock) {
     const item = inertItem('ai-usage-limit');
     const column = new St.BoxLayout({
@@ -211,7 +191,7 @@ function limitItem(limit, resetFormat, clock) {
         x_expand: true,
     });
 
-    const top = new St.BoxLayout({style_class: 'ai-usage-limit-row', x_expand: true});
+    const top = new St.BoxLayout({style_class: 'ai-usage-limit-row'});
     const name = new St.Label({
         text: limit.label,
         style_class: 'ai-usage-limit-label',
@@ -227,7 +207,6 @@ function limitItem(limit, resetFormat, clock) {
         top.add_child(new St.Label({
             text: reset,
             style_class: 'ai-usage-limit-reset',
-            x_align: Clutter.ActorAlign.END,
             y_align: Clutter.ActorAlign.CENTER,
             opacity: DIM_OPACITY,
         }));
@@ -237,10 +216,10 @@ function limitItem(limit, resetFormat, clock) {
     if (limit.percent === null)
         return item;
 
-    // A box, not an St.Bin, so the figure ends where the bar does.
+    // A box, not an St.Bin, which would centre the figure.
     const figure = new St.Label({
         text: formatPercent(limit.percent),
-        style_class: `ai-usage-limit-figure ${SEVERITY_CLASS[limit.severity]}`,
+        style_class: `ai-usage-limit-figure ai-usage-${limit.severity}`,
         x_expand: true,
         x_align: Clutter.ActorAlign.END,
         y_align: Clutter.ActorAlign.CENTER,
@@ -251,8 +230,7 @@ function limitItem(limit, resetFormat, clock) {
 
     column.add_child(new BarLevel.BarLevel({
         value: limit.percent / 100,
-        style_class: `ai-usage-bar ${SEVERITY_CLASS[limit.severity]}`,
-        x_expand: true,
+        style_class: `ai-usage-bar ai-usage-${limit.severity}`,
     }));
     return item;
 }
