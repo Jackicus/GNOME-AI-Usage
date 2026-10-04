@@ -53,4 +53,3 @@ export function applyOptions(reading, options, thresholds) {
     view.credits = options.showCredits && reading.credits ? graded(reading.credits) : null;
     return view;
 }
-

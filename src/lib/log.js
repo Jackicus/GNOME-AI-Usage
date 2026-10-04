@@ -3,7 +3,7 @@
 let verbose = false;
 
 export function setVerbose(on) {
-    verbose = !!on;
+    verbose = on;
 }
 
 export function debug(message) {

@@ -25,11 +25,11 @@ export class Http {
     }
 
     // Rejects with an HttpError carrying the status (0 when nothing came back).
-    getJson(url, headers = {}, cancellable = null) {
+    getJson(url, headers, cancellable) {
         return this._send('GET', url, headers, null, cancellable);
     }
 
-    postJson(url, headers = {}, body = {}, cancellable = null) {
+    postJson(url, headers, body, cancellable) {
         return this._send('POST', url, headers, JSON.stringify(body), cancellable);
     }
 
@@ -37,6 +37,7 @@ export class Http {
         const message = Soup.Message.new(method, url);
 
         const requestHeaders = message.get_request_headers();
+        requestHeaders.append('Accept', 'application/json');
         for (const [name, value] of Object.entries(headers))
             requestHeaders.append(name, value);
         if (!headers['User-Agent'])
