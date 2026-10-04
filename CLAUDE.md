@@ -72,7 +72,7 @@ log on (`lib/log.js`'s `setVerbose`) and names its stage after a checksum of
   owners' written permission (README, Credits and trademarks), so the tabs carry
   the names and nothing is drawn after a mark.
 * **The pop-up has a tab per live provider**, at the top or, by `tab-position`,
-  the bottom, with refresh and preferences at the end of the tab row. A click on a
+  the bottom, with refresh at the end of the tab row. A click on a
   tab writes `selected-provider`, which the next redraw reads back: the pop-up opens
   on that tab and the button shows its figure; with none chosen, or its tab
   hidden, the first tab is selected. `hide-unavailable` (default on) drops the tab of a provider with no figure,
@@ -85,7 +85,7 @@ log on (`lib/log.js`'s `setVerbose`) and names its stage after a checksum of
 * **Reading is lazy.** A timer (`poll-seconds`) is the fallback, skipped when
   the session has been idle for 10 minutes. The real triggers are the stored
   login changing on disk (file monitor, 2 s debounce) and opening a pop-up —
-  which re-reads only if the figures are over a minute old. Header refresh
+  which re-reads only if the figures are over a minute old. The refresh button
   always reads, every provider.
 * Notifications fire once per limit per window, keyed by reset time (rounded to
   the minute by `parseTimestamp()`). The app holds that record, so a disable
