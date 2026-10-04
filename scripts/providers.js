@@ -1,10 +1,5 @@
-// What the extension would see, printed in a terminal: for every provider, is
-// its command-line tool installed, is there a login stored, and what figures
-// come back. `./scripts/dev.sh providers`.
-//
-// It runs the extension's own provider modules -- src/lib/providers/ -- rather
-// than a copy of their logic, so agreeing with the button is not a coincidence.
-// Nothing in here ships.
+// For every provider: is its tool installed, is a login stored, and what figures come back, through
+// the extension's own provider modules. `./scripts/dev.sh providers`; nothing here ships.
 
 import GLib from 'gi://GLib';
 
@@ -18,8 +13,7 @@ const BOLD = '\x1b[1m';
 const DIM = '\x1b[2m';
 const OFF = '\x1b[0m';
 
-// Every row shown, coloured at the schema's default thresholds -- the same
-// pass the button's own figures go through before they are drawn.
+// Every row shown, at the schema's default thresholds.
 const EVERYTHING = {showPerModel: true, showBreakdown: true, showCredits: true};
 const THRESHOLDS = {warn: 80, critical: 95};
 
@@ -76,8 +70,7 @@ async function report(http, provider) {
     print('');
 }
 
-// gjs has no top-level await, so the work runs inside a main loop that the last
-// provider stops.
+// gjs has no top-level await, so the work runs inside a main loop that the last provider stops.
 const loop = new GLib.MainLoop(null, false);
 const http = new Http('gnome-shell-extension-ai-usage/dev');
 let failed = false;
@@ -86,8 +79,7 @@ GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
     (async () => {
         for (const provider of PROVIDERS) {
             try {
-                // Providers are independent and there are a handful at most;
-                // one at a time keeps the output in a readable order.
+                // One at a time keeps the output in a readable order.
                 // eslint-disable-next-line no-await-in-loop
                 await report(http, provider);
             } catch (e) {

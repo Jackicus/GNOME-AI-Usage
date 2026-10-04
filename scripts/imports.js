@@ -1,20 +1,7 @@
-// Checks that the preferences can still load what they load.
-// `./scripts/dev.sh imports`, and `make check`.
-//
-// prefs.js runs in its own process, without the shell. It cannot load St, or
-// Clutter, or anything under resource:///org/gnome/shell/ -- and it reaches the
-// provider registry and settings.js, so neither of those, nor anything they
-// import, may drag one in. That is why common.js's failureReading() reads
-// `e.status` duck-typed instead of importing HttpError: one import of http.js
-// would put Soup in the graph and the preferences would stop opening.
-//
-// It is an easy rule to break by accident and an invisible one to break: the
-// shell side keeps working, and only the preferences fail, in a process nobody
-// is watching. So the graph is walked from prefs.js and every module in it is
-// held to the rule, and then the two modules the preferences share with the
-// shell are actually loaded, to prove it rather than infer it.
-//
-// Nothing here ships.
+// prefs.js runs without the shell, so nothing in its import graph may reach St, Clutter, Meta, Shell,
+// Soup or resource:///org/gnome/shell/ (which is why common.js duck-types e.status instead of
+// importing HttpError). Walks the graph, then loads the two modules the preferences share with the
+// shell. `./scripts/dev.sh imports`; nothing here ships.
 
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
@@ -24,9 +11,8 @@ const GREEN = '\x1b[1;32m';
 const DIM = '\x1b[2m';
 const OFF = '\x1b[0m';
 
-// What a module in the preferences' graph may not import. The shell's own
-// resource path is lowercase `shell`; the preferences' own entry point lives
-// under `Shell/Extensions`, which is a different thing and is allowed.
+// The shell's resource path is lowercase `shell`; the preferences' own entry point under
+// `Shell/Extensions` is allowed.
 const FORBIDDEN = [
     'gi://St', 'gi://Clutter', 'gi://Meta', 'gi://Shell', 'gi://Soup',
     'resource:///org/gnome/shell/',
@@ -51,9 +37,7 @@ function read(path) {
     return new TextDecoder().decode(bytes);
 }
 
-// Static `import ... from '...'`, bare `import '...'`, and dynamic `import('...')`.
-// A regex rather than a parser: these files are plain ES modules written in one
-// house style, and a dependency on acorn for this would be its own cost.
+// A regex, not a parser: these are plain ES modules in one house style.
 function importsOf(source) {
     const specifiers = [];
     const patterns = [
@@ -91,28 +75,21 @@ function graphFrom(entry) {
     return seen;
 }
 
-function relative(path) {
-    return path.startsWith(`${SRC}/`) ? path.slice(SRC.length + 1) : path;
-}
-
 print(`${'\x1b[1m'}The preferences' import graph${OFF} — src/prefs.js and everything it reaches`);
 {
     const graph = graphFrom(GLib.build_filenamev([SRC, 'prefs.js']));
 
-    // The graph itself, so that a module dropping out of it is visible: this
-    // check is only worth anything while it is actually walking something.
+    // A graph that dropped out would make this pass trivially.
     check('modules reached', graph.size > 1, true);
 
     for (const [path, specifiers] of graph) {
         const bad = specifiers.filter(s => FORBIDDEN.some(f => s.startsWith(f)));
-        check(`${relative(path)} stays clear`, bad.join(', ') || 'yes', 'yes');
+        check(`${path.slice(SRC.length + 1)} stays clear`, bad.join(', ') || 'yes', 'yes');
     }
 }
 
 print(`\n${'\x1b[1m'}Loading them${OFF} — outside the shell, as the preferences do`);
 {
-    // The two modules the preferences share with the shell. If either has
-    // picked up an import it should not have, this is where it says so.
     const shared = ['lib/providers/registry.js', 'lib/settings.js'];
     const loaded = await Promise.all(shared.map(name =>
         import(`file://${GLib.build_filenamev([SRC, name])}`)
