@@ -52,7 +52,7 @@ export const ClaudeProvider = {
 
     _parse(body, auth) {
         const rows = Array.isArray(body?.limits) ? body.limits : [];
-        const limits = rows.length ? rows.map(limitFromRow).filter(Boolean) : limitsFromWindows(body);
+        const limits = rows.map(limitFromRow).filter(Boolean);
 
         if (!limits.length)
             throw new Error('no limits in the response');
@@ -81,7 +81,6 @@ function limitFromRow(row) {
         percent,
         severity: row.severity,
         resetsAt: parseTimestamp(row.resets_at),
-        active: row.is_active === true,
         // Scoped by model or by surface: either way the per-model switch hides it.
         scoped: !!row.scope,
     });
@@ -91,31 +90,6 @@ function labelForRow(kind, row) {
     const base = KIND_LABELS[kind] ?? humanise(kind);
     const scope = row.scope?.model?.display_name ?? row.scope?.surface?.display_name;
     return scope ? `${base} · ${scope}` : base;
-}
-
-// The older top-level windows, in case `limits` goes away again.
-function limitsFromWindows(body) {
-    const windows = [
-        ['session', KIND_LABELS.session, body?.five_hour, false],
-        ['weekly_all', KIND_LABELS.weekly_all, body?.seven_day, false],
-        ['weekly_opus', `${KIND_LABELS.weekly_scoped} · Opus`, body?.seven_day_opus, true],
-        ['weekly_sonnet', `${KIND_LABELS.weekly_scoped} · Sonnet`, body?.seven_day_sonnet, true],
-    ];
-
-    const limits = [];
-    for (const [id, label, window, scoped] of windows) {
-        const percent = numberOrNull(window?.utilization);
-        if (percent === null)
-            continue;
-        limits.push(new Limit({
-            id,
-            label,
-            percent,
-            resetsAt: parseTimestamp(window.resets_at),
-            scoped,
-        }));
-    }
-    return limits;
 }
 
 function breakdownFrom(body) {

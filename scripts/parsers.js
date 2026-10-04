@@ -60,7 +60,6 @@ print('\x1b[1mClaude\x1b[0m — tests/fixtures/claude-usage.json');
     check('per-model row is labelled', reading.limits[2].label, 'Weekly · Fable');
     check('per-model row is marked scoped', reading.limits[2].scoped, true);
     check('whole-account row is not scoped', reading.limits[1].scoped, false);
-    check('active limit marked', reading.limits[2].active, true);
     check('reset time parsed', reading.limits[0].resetsAt?.format_iso8601(), '2026-09-30T18:10:00Z');
     check('breakdown rows kept', reading.breakdown.length, 1);
     check('breakdown label', reading.breakdown[0].label, 'Claude Code');

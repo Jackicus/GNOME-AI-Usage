@@ -27,10 +27,10 @@ function claudeUsage() {
     const weekly = inDaysAt(4, 15);
     return {
         limits: [
-            {kind: 'session', percent: 12, severity: 'normal', resets_at: inHours(2, 22), scope: null, is_active: false},
-            {kind: 'weekly_all', percent: 34, severity: 'normal', resets_at: weekly, scope: null, is_active: false},
+            {kind: 'session', percent: 12, severity: 'normal', resets_at: inHours(2, 22), scope: null},
+            {kind: 'weekly_all', percent: 34, severity: 'normal', resets_at: weekly, scope: null},
             {
-                kind: 'weekly_scoped', percent: 41, severity: 'normal', resets_at: weekly, is_active: true,
+                kind: 'weekly_scoped', percent: 41, severity: 'normal', resets_at: weekly,
                 scope: {model: {id: null, display_name: 'Opus'}, surface: null},
             },
         ],
