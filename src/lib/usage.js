@@ -15,13 +15,12 @@ export const Severity = {
 };
 
 export class Limit {
-    constructor({id, label, percent, severity = Severity.NORMAL, resetsAt = null, active = false, scoped = false}) {
+    constructor({id, label, percent, severity = Severity.NORMAL, resetsAt = null, scoped = false}) {
         this.id = id;
         this.label = label;
         this.percent = Math.max(0, Math.min(100, percent));
         this.severity = severity;   // the service's own; applyOptions() adds the user's thresholds
         this.resetsAt = resetsAt;   // GLib.DateTime in UTC, or null when open-ended
-        this.active = active;
         this.scoped = scoped;       // metered per model rather than per account
     }
 }

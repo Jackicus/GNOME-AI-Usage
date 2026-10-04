@@ -17,9 +17,9 @@ request Claude Code's own `/usage` makes, so the button and the terminal agree.
 The header is not currently required; it is sent to look exactly like the tool.
 
 The useful part is `limits[]`: one row per limit with `percent`, `severity`,
-`resets_at`, `is_active`, and `scope.model` on per-model rows; an unknown `kind`
-is shown under a label made from its name. The top-level `five_hour`/`seven_day`
-are the fallback. `seven_day_breakdown` says where the week went;
+`resets_at` and `scope.model` on per-model rows; an unknown `kind` is shown under a
+label made from its name. The older top-level `five_hour`/`seven_day` fields are not
+read. `seven_day_breakdown` says where the week went;
 `extra_usage`/`spend` are paid credits — when disabled, a `percent: null` credits
 entry drawn as an "Extra usage · off" line with no bar.
 

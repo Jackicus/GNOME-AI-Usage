@@ -54,7 +54,7 @@ async function report(http, provider) {
     print('  limits:');
     for (const limit of reading.limits) {
         const reset = formatReset(limit.resetsAt);
-        const marks = [limit.severity, limit.active ? 'in force' : null].filter(m => m && m !== 'normal');
+        const marks = limit.severity === 'normal' ? [] : [limit.severity];
         print(`    ${limit.label.padEnd(26)} [${bar(limit.percent)}] ${formatPercent(limit.percent).padStart(4)}`
             + `  ${DIM}${[reset, ...marks].filter(p => p).join(', ')}${OFF}`);
     }
