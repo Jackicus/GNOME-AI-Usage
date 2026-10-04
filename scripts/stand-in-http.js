@@ -1,14 +1,6 @@
-// The network, as `./scripts/nested.sh start --stand-in` (and so `shots`)
-// shows it: staged over lib/http.js in the nested shell's copy of the
-// extension, it answers each provider's usage request with invented figures and
-// sends nothing anywhere. Nothing here ships, and nothing in a screenshot is
-// anyone's account.
-//
-// The providers run unchanged around it: they read the stand-in logins
-// scripts/nested.d/stand-in.sh writes into a scratch HOME, build their
-// requests, and parse what comes back exactly as they would a real answer.
-// Reset times are made relative to now, so a retake on any day reads like a
-// working week.
+// Staged over lib/http.js under `start --stand-in`: answers each provider's usage request with
+// invented figures, with reset times relative to now, and sends nothing. The providers run
+// unchanged around it, on the stand-in logins scripts/nested.d/stand-in.sh writes. Nothing here ships.
 
 import GLib from 'gi://GLib';
 

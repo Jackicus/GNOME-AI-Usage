@@ -68,20 +68,18 @@ log on (`lib/log.js`'s `setVerbose`) and names its stage after a checksum of
 * **One button, `AI` and a percentage**, while a provider is live (`enabled` and
   its CLI on `PATH`); the percentage is the selected tab's figure, picked by
   `primary-limit`, and tints the label by its severity. `show-percent` off leaves
-  `AI`. No icon ships: the providers' marks need their
-  owners' written permission (README, Credits and trademarks), so the tabs carry
-  the names and nothing is drawn after a mark.
+  `AI`. No icon ships: the providers' marks need their owners' written permission
+  (README, Credits and trademarks), so the tabs carry the names.
 * **The pop-up has a tab per live provider**, at the top or, by `tab-position`,
-  the bottom, with refresh at the end of the tab row. A click on a
-  tab writes `selected-provider`, which the next redraw reads back: the pop-up opens
-  on that tab and the button shows its figure; with none chosen, or its tab
-  hidden, the first tab is selected. `hide-unavailable` (default on) drops the tab of a provider with no figure,
-  or no reading yet, and the button with the last tab; it is still read, so it
-  returns when the tool refreshes its login. `_syncProviders()` diffs against the
-  live list, so toggling needs no restart.
-* Role `${uuid}`; placed in `panel-box` at `panel-index`. Destroying the
-  indicator releases the role, and `_place()` builds a new one to place again
-  through `addToStatusArea` (a move, the first provider switched on).
+  the bottom, with refresh at the end of the tab row. A click on a tab writes
+  `selected-provider`, which the next redraw reads back: the pop-up opens on that
+  tab and the button shows its figure; with none chosen, or its tab hidden, the
+  first tab is selected. `hide-unavailable` (default on) drops the tab of a
+  provider with no figure, or no reading yet, and the button with the last tab;
+  it is still read, so it returns when the tool refreshes its login.
+  `_syncProviders()` diffs against the live list, so toggling needs no restart.
+* Role `${uuid}`, placed in `panel-box` at `panel-index`. Destroying the indicator
+  releases the role, so `_place()` builds a new one to move it.
 * **Reading is lazy.** A timer (`poll-seconds`) is the fallback, skipped when
   the session has been idle for 10 minutes. The real triggers are the stored
   login changing on disk (file monitor, 2 s debounce) and opening a pop-up —
@@ -103,8 +101,9 @@ log on (`lib/log.js`'s `setVerbose`) and names its stage after a checksum of
 
 Global keys: `primary-limit` (`session` default, `highest`, `weekly`),
 `show-percent`, `hide-unavailable`, `renew-login`, `reset-format`,
-`selected-provider` (the tab chosen last), `tab-position` (`top` default, `bottom`), `panel-box`, `panel-index`, `poll-seconds`,
-`warn-percent`, `critical-percent`, `notify-percent`.
+`selected-provider` (the tab chosen last), `tab-position` (`top` default, `bottom`),
+`panel-box`, `panel-index`, `poll-seconds`, `warn-percent`, `critical-percent`,
+`notify-percent`.
 
 **Per-provider keys are a relocatable schema** at
 `/org/gnome/shell/extensions/ai-usage/providers/<id>/` (no schema change per
@@ -133,8 +132,8 @@ None.
 
   CI adds `libsecret` (`.github/ci-packages`): `antigravity.js` imports
   `gi://Secret`, and the imports and parsers checks load it. It ends with `size`:
-  src/ JavaScript against `EXT_BUDGET_LINES` (1900: the size after the simplify
-  pass of 2026-10-02, 1806 lines, rounded up to the next hundred).
+  src/ JavaScript against `EXT_BUDGET_LINES` (1800: the size after the simplify
+  pass of 2026-10-04, 1756 lines, rounded up to the next hundred).
 * `make providers` — the real provider modules under plain `gjs`, printing what
   each tab would show. Tells a data problem from a drawing problem. It reads
   the real stored logins and goes to the network: ask first.

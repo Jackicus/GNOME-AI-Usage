@@ -72,11 +72,9 @@ windows of the paid plans are known only from openai/codex's source
 
 `renew-login` runs `timeout 60 <cli> <renewArgs>` once per expiry (reset by the
 next good read) and does not wait: the credentials file monitor reads the result.
-`renewArgs` is `['doctor']` for Claude and Codex, found by pointing each CLI at a
-mock token server (fake logins in a scratch `HOME`, a local TLS stand-in via
-`NODE_EXTRA_CA_CERTS` / `SSL_CERT_FILE` and `HTTPS_PROXY`; nothing real is
-touched, and a real refresh would rotate Claude's token): Claude Code 2.1.288
-and codex-cli 0.156.0, 2026-10-03. `claude doctor` and `claude mcp list` refresh
+`renewArgs` is `['doctor']` for Claude and Codex, found by pointing each CLI at a mock
+token server with fake logins (a real refresh would rotate Claude's token): Claude Code
+2.1.288 and codex-cli 0.156.0, 2026-10-03. `claude doctor` and `claude mcp list` refresh
 and rewrite the file with no model call (`mcp list` also starts the user's MCP
 servers); `claude auth status` posts the refresh but exits before saving it;
 `codex doctor` refreshes, while `codex login status` and `codex mcp list` do not.

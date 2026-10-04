@@ -26,24 +26,23 @@
         <key name="primary-limit" enum="org.gnome.shell.extensions.ai-usage.primary-limit">
             <default>'session'</default>
             <summary>Which limit the button shows</summary>
-            <description>"session": the current session; "weekly": the week's whole-account limit; each falls back to the highest. "highest": the limit closest to being used up. The button shows it for the provider whose tab is selected.</description>
+            <description>"highest" is the limit closest to used up; "session" and "weekly" fall back to it.</description>
         </key>
         <key name="show-percent" type="b">
             <default>true</default>
             <summary>Show the percentage beside "AI"</summary>
-            <description>With this off the button is just "AI", tinted by how much has been used.</description>
         </key>
 
         <key name="hide-unavailable" type="b">
             <default>true</default>
             <summary>Hide a provider that has no figure to show</summary>
-            <description>A provider that is signed out, whose stored login has expired or that could not be read has no tab until it has a figure, and the button is hidden while no provider has one. They are still read, so they return by themselves.</description>
+            <description>A provider that is signed out, expired or unreadable has no tab, and the button is hidden while none has a figure. They are still read.</description>
         </key>
 
         <key name="renew-login" type="b">
             <default>false</default>
             <summary>Renew an expired login by running the provider's tool</summary>
-            <description>Once each time a login expires, runs the tool's own diagnostics command (claude doctor, codex doctor), which refreshes the login it stored. The extension still never refreshes a token itself.</description>
+            <description>Once per expiry, runs the tool's own claude doctor or codex doctor, which refreshes the login it stored. The extension never refreshes a token itself.</description>
         </key>
 
         <key name="reset-format" enum="org.gnome.shell.extensions.ai-usage.reset-format">
@@ -55,31 +54,26 @@
         <key name="selected-provider" type="s">
             <default>''</default>
             <summary>The provider whose tab was chosen last</summary>
-            <description>The pop-up opens on this provider's tab and the button shows its figure. Empty, or a provider with no tab, means the first tab.</description>
         </key>
         <key name="tab-position" enum="org.gnome.shell.extensions.ai-usage.tab-position">
             <default>'top'</default>
             <summary>Where the provider tabs sit in the pop-up</summary>
-            <description>"top" or "bottom" of the pop-up.</description>
         </key>
 
         <key name="panel-box" enum="org.gnome.shell.extensions.ai-usage.panel-box">
             <default>'right'</default>
             <summary>Which end of the top bar the button sits at</summary>
-            <description>"right" among the status icons, "center" beside the clock, "left" beside Activities.</description>
         </key>
         <key name="panel-index" type="i">
             <default>0</default>
             <range min="-1" max="20"/>
             <summary>Position within that end of the top bar</summary>
-            <description>Where the button goes: 0 is the end nearest the middle of the bar; -1 puts it last.</description>
         </key>
 
         <key name="poll-seconds" type="i">
             <default>300</default>
             <range min="60" max="3600"/>
             <summary>Seconds between readings</summary>
-            <description>Opening the pop-up, or the stored login changing, also reads the figures again.</description>
         </key>
 
         <key name="warn-percent" type="i">

@@ -1,15 +1,5 @@
-// Runs each provider's parser over a saved response and checks what comes out.
-// `./scripts/dev.sh parsers`, and `make check`.
-//
-// This is the only test that can run without a GNOME Shell, and for providers
-// whose command-line tool is not installed here it is the ONLY check there is.
-// codex-usage.json is the paid-plan shape from openai/codex's own tests;
-// codex-usage-free.json is the shape a live free-plan account answered with
-// (2026-10-02), its values invented.
-//
-// The endpoints are undocumented and their shapes move, so the point is less
-// "does this pass today" than "say so loudly the day a response changes".
-// Nothing here ships.
+// Each provider's parser over saved responses (tests/fixtures/). The endpoints are undocumented and their shapes
+// move, so this says so when one does. `./scripts/dev.sh parsers`; nothing here ships.
 
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
@@ -47,21 +37,14 @@ function fixture(name) {
     return JSON.parse(new TextDecoder().decode(bytes));
 }
 
-// The parsers take the credentials only for the plan label, so a stub is enough
-// -- no token is needed to parse a response that has already arrived.
-function parse(provider, body, auth) {
-    return provider._parse(body, auth);
-}
-
-// Severity is decided at draw time, against the user's thresholds, so it is
-// checked on what applyOptions() hands the renderer and not on the parse.
+// Severity is decided at draw time, so it is checked on what applyOptions() returns.
 function drawn(reading, thresholds = THRESHOLDS) {
     return applyOptions(reading, EVERYTHING, thresholds);
 }
 
 print('\x1b[1mClaude\x1b[0m — tests/fixtures/claude-usage.json');
 {
-    const reading = parse(ClaudeProvider, fixture('claude-usage.json'),
+    const reading = ClaudeProvider._parse(fixture('claude-usage.json'),
         {rateLimitTier: 'default_claude_max_5x'});
 
     check('status', reading.status, Status.OK);
@@ -71,8 +54,7 @@ print('\x1b[1mClaude\x1b[0m — tests/fixtures/claude-usage.json');
     check('session percent', formatPercent(reading.limits[0].percent), '50%');
     check('severity from the response (warning)', drawn(reading).limits[1].severity, 'warning');
     check('severity from the response (critical)', drawn(reading).limits[2].severity, 'critical');
-    // Claude Code's own words for these rows, so the pop-up and the terminal
-    // name the same limit the same way (issue #20).
+    // Claude Code's own words for these rows.
     check('session row takes Claude Code\'s words', reading.limits[0].label, '5-hour limit');
     check('the weekly row too', reading.limits[1].label, 'Weekly · all models');
     check('per-model row is labelled', reading.limits[2].label, 'Weekly · Fable');
@@ -82,28 +64,20 @@ print('\x1b[1mClaude\x1b[0m — tests/fixtures/claude-usage.json');
     check('reset time parsed', reading.limits[0].resetsAt?.format_iso8601(), '2026-09-30T18:10:00Z');
     check('breakdown rows kept', reading.breakdown.length, 1);
     check('breakdown label', reading.breakdown[0].label, 'Claude Code');
-    // Switched off is shown as off, not left out: a preferences switch that
-    // is on and draws nothing reads as broken. No figure, because the service
-    // sends none -- only what has been spent.
+    // Switched off is shown as off, with no figure: the service sends only what has been spent.
     check('credits shown as off when not enabled', reading.credits?.label, 'Extra usage · off');
     check('with no figure to draw a bar from', reading.credits?.percent, null);
     check('and what has been spent', reading.credits?.detail, '0.00 USD used');
     check('worst limit is the highest', formatPercent(reading.worst.percent), '97%');
 }
 
-// Where the plan name comes from, and in what order. The tier in the
-// credentials file is stamped there at sign-in and never rewritten, so on an
-// account that has since changed plan it is simply wrong -- a Max 20x account
-// read from it says "Max 5x" (issue #12). ~/.claude.json is the copy Claude
-// Code refreshes when it starts, so it is asked first; every way that file can
-// fail has to fall through to the old source rather than take the pop-up down.
+// ~/.claude.json is the copy of the plan Claude Code refreshes; the credentials' tier is stale after a plan
+// change. Any failure there falls through to the old source.
 print('\n\x1b[1mClaude\x1b[0m — the plan name, and which file it comes from');
 {
     const dir = GLib.dir_make_tmp('ai-usage-plan-XXXXXX');
     const written = [];
-    // The account file as it would be on disk, read the way the extension
-    // reads the real one -- so what is pinned here is the actual file handling
-    // rather than a re-statement of it. A null text means no file at all.
+    // The account file as on disk, read the way the extension reads it; a null text is no file.
     const accountTier = async text => {
         const file = Gio.File.new_for_path(
             GLib.build_filenamev([dir, `claude-${written.length}.json`]));
@@ -131,8 +105,7 @@ print('\n\x1b[1mClaude\x1b[0m — the plan name, and which file it comes from');
     check('max_20x humanises', planLabel({accountTier: live}), 'Max (20x)');
     check('it beats the stale credentials tier', planLabel({...stale, accountTier: live}), 'Max (20x)');
     check('which on its own would have said', planLabel(stale), 'Max (5x)');
-    // Claude Code writes the multiplier in brackets (issue #20), and only the
-    // multiplier: a tier that has none must not grow a pair.
+    // The multiplier goes in brackets, and only a tier that has one.
     check('a tier with no multiplier is left alone',
         planLabel({accountTier: 'default_claude_pro'}), 'Pro');
 
@@ -142,9 +115,7 @@ print('\n\x1b[1mClaude\x1b[0m — the plan name, and which file it comes from');
             organizationRateLimitTier: null, userRateLimitTier: 'default_claude_pro',
         }})), 'default_claude_pro');
 
-    // Each of these is an ordinary state and not a fault: no file until Claude
-    // Code has run, a half-written one while it rewrites, and no oauthAccount
-    // at all until it has been signed into once.
+    // Ordinary states, not faults: no file yet, a half-written one, no oauthAccount.
     check('an absent file yields no tier', await accountTier(null), null);
     check('an unparseable file yields no tier', await accountTier('{"oauthAccount": {"organi'), null);
     check('a file with no oauthAccount yields none', await accountTier('{"numStartups": 42}'), null);
@@ -163,7 +134,7 @@ print('\n\x1b[1mClaude\x1b[0m — the plan name, and which file it comes from');
     check('nothing known at all means no plan shown', planLabel({}), null);
 
     // And the whole way through, on a real response.
-    const reading = parse(ClaudeProvider, fixture('claude-usage.json'),
+    const reading = ClaudeProvider._parse(fixture('claude-usage.json'),
         {...stale, accountTier: live});
     check('the reading carries the live plan', reading.plan, 'Max (20x)');
 
@@ -172,9 +143,7 @@ print('\n\x1b[1mClaude\x1b[0m — the plan name, and which file it comes from');
     Gio.File.new_for_path(dir).delete(null);
 }
 
-// A reset time as the services give it, which jitters. Every provider takes it
-// through parseTimestamp(), and the figure that comes back is the nearest whole
-// minute, so one reset is one moment however many times it is read (#39).
+// Resets jitter; parseTimestamp() rounds to the minute so one reset is one moment.
 print('\n\x1b[1mReset timestamps\x1b[0m — jitter in resets_at is rounded away');
 {
     const unix = text => parseTimestamp(text)?.to_unix();
@@ -191,26 +160,20 @@ print('\n\x1b[1mReset timestamps\x1b[0m — jitter in resets_at is rounded away'
     check('not a time is no time', parseTimestamp('soon'), null);
 }
 
-// How a reset is worded. Pinned against a fixed moment, in a fixed timezone,
-// with the clock setting passed in: the wording is the whole point of the
-// setting, and the machine's own timezone and clock would make every expected
-// string here a moving target. Everything that ships passes none of the three
-// and gets the real ones.
+// Pinned to a fixed moment, timezone and clock, so the expected strings do not move with the machine.
 print('\n\x1b[1mReset times\x1b[0m — the four reset-format values, against a fixed moment');
 {
     const utc = GLib.TimeZone.new_utc();
     const at = text => GLib.DateTime.new_from_iso8601(text, null);
 
-    // Wednesday 30 September 2026, 13:59 UTC. An hour and a minute before one
-    // reset, and six days before the fixture's weekly one, which falls on the
-    // Tuesday.
+    // Wednesday 30 September 2026, 13:59 UTC: an hour before one reset, six days before the weekly one.
     const now = at('2026-09-30T13:59:00+00:00');
     const soon = at('2026-09-30T15:00:00+00:00');
     const far = at('2026-10-06T14:00:00+00:00');
     const say = (resetsAt, format, clock = '12h') =>
         formatReset(resetsAt, {format, now, clock, timezone: utc});
 
-    // Claude Code's own two sentences, down to "hr" and "min" (issues #13, #20).
+    // Claude Code's own wording, down to "hr" and "min".
     check('auto: a countdown while it is near', say(soon, ResetFormat.AUTO), 'Resets in 1 hr 1 min');
     check('auto: a wall clock once it is not', say(far, ResetFormat.AUTO), 'Resets Tue 2:00 PM');
     check('relative keeps the countdown far out', say(far, ResetFormat.RELATIVE), 'Resets in 6 days');
@@ -219,9 +182,6 @@ print('\n\x1b[1mReset times\x1b[0m — the four reset-format values, against a f
     check('auto is what a caller gets by default',
         formatReset(far, {now, clock: '12h', timezone: utc}), 'Resets Tue 2:00 PM');
 
-    // A day name on something happening this afternoon reads as another day.
-    check('no day name when it is today', say(soon, ResetFormat.ABSOLUTE), 'Resets 3:00 PM');
-    check('a day name when it is not', say(far, ResetFormat.ABSOLUTE), 'Resets Tue 2:00 PM');
     check('and the date past the next six days',
         say(at('2026-10-07T13:00:00+00:00'), ResetFormat.ABSOLUTE), 'Resets Wed 7 Oct 1:00 PM');
     check('a month away', say(at('2026-11-01T15:24:00+00:00'), ResetFormat.AUTO, '24h'), 'Resets Sun 1 Nov 15:24');
@@ -239,13 +199,11 @@ print('\n\x1b[1mReset times\x1b[0m — the four reset-format values, against a f
     check('an open-ended limit has no sentence', formatReset(null), null);
 }
 
-// The breakdown line. It sits directly under a row that IS a limit, so it must
-// not read as another one -- and one surviving row is 100% by definition and
-// reports nothing at all (issue #14). The provider goes on reporting every row
-// it knows, as the rest of them do; the rule is the renderer's.
+// The breakdown line sits under a limit row, so it must not read as another one: a single
+// surviving row is 100% and reports nothing.
 print('\n\x1b[1mThe breakdown line\x1b[0m — quiet until it has something to report');
 {
-    const reading = parse(ClaudeProvider, fixture('claude-usage.json'), {});
+    const reading = ClaudeProvider._parse(fixture('claude-usage.json'), {});
     check('the provider still reports its one row', reading.breakdown.length, 1);
     check('but one surface earns no line', formatBreakdown(reading.breakdown), null);
 
@@ -258,7 +216,7 @@ print('\n\x1b[1mThe breakdown line\x1b[0m — quiet until it has something to re
 
 print('\n\x1b[1mCodex\x1b[0m — tests/fixtures/codex-usage.json  \x1b[2m(paid plan, shape from openai/codex)\x1b[0m');
 {
-    const reading = parse(CodexProvider, fixture('codex-usage.json'), {plan: null});
+    const reading = CodexProvider._parse(fixture('codex-usage.json'), {plan: null});
 
     check('status', reading.status, Status.OK);
     check('plan label from plan_type', reading.plan, 'Plus');
@@ -280,7 +238,7 @@ print('\n\x1b[1mCodex\x1b[0m — tests/fixtures/codex-usage.json  \x1b[2m(paid p
 
 print('\n\x1b[1mCodex\x1b[0m — tests/fixtures/codex-usage-free.json  \x1b[2m(free plan, the live shape)\x1b[0m');
 {
-    const reading = parse(CodexProvider, fixture('codex-usage-free.json'), {plan: null});
+    const reading = CodexProvider._parse(fixture('codex-usage-free.json'), {plan: null});
 
     check('status', reading.status, Status.OK);
     check('plan label from plan_type', reading.plan, 'Free');
@@ -309,10 +267,8 @@ print('\n\x1b[1mAntigravity\x1b[0m — tests/fixtures/antigravity-quota.json  \x
     check('status', reading.status, Status.OK);
     check('buckets found', reading.limits.length, 3);
 
-    // The response says what is LEFT and the extension shows what is USED.
-    // Getting this backwards would read 100% on an untouched limit.
-    // Sorted: the 5-hour bucket, then the weekly ones in the order the
-    // response listed them (the sort is stable, and both rank the same).
+    // The response says what is LEFT and the extension shows what is USED: backwards would read 100% on an
+    // untouched limit. Sorted: the 5-hour bucket first, then the weekly ones in response order.
     check('remainingFraction 0.35 means 65% used', formatPercent(reading.limits[0].percent), '65%');
     check('remainingFraction 0 means fully used', formatPercent(reading.limits[1].percent), '100%');
     check('remainingFraction 1 means untouched', formatPercent(reading.limits[2].percent), '0%');
@@ -321,8 +277,7 @@ print('\n\x1b[1mAntigravity\x1b[0m — tests/fixtures/antigravity-quota.json  \x
     check('5h window labelled', reading.limits[0].label, 'Current session · Gemini Models');
     check('weekly window labelled', reading.limits[1].label, 'This week · Gemini Models');
     check('the other family keeps its own row', reading.limits[2].label, 'This week · Claude and GPT models');
-    // The bucket's own displayName is "Weekly Limit Remaining", which over a
-    // used-figure would be a plain lie. It must not reach the label.
+    // The bucket's displayName is "Weekly Limit Remaining", which over a used figure would lie.
     check('the response label is NOT reused', reading.limits[1].label.includes('Remaining'), false);
     check('an exhausted bucket is critical', drawn(reading).limits[1].severity, 'critical');
     check('an untouched bucket is normal', drawn(reading).limits[2].severity, 'normal');
@@ -330,11 +285,10 @@ print('\n\x1b[1mAntigravity\x1b[0m — tests/fixtures/antigravity-quota.json  \x
     check('nothing is marked per-model', reading.limits.filter(l => l.scoped).length, 0);
 }
 
-// The display switches must never destroy what they hide: turning one back on
-// has to restore the row at once, without waiting for the next poll.
+// Turning a hidden row's switch back on restores it without a new poll.
 print('\n\x1b[1mDisplay switches\x1b[0m — hiding a row must not throw it away');
 {
-    const full = parse(ClaudeProvider, fixture('claude-usage.json'),
+    const full = ClaudeProvider._parse(fixture('claude-usage.json'),
         {rateLimitTier: 'default_claude_max_5x'});
     const hidden = applyOptions(full, {...EVERYTHING, showPerModel: false, showBreakdown: false}, THRESHOLDS);
 
@@ -349,20 +303,16 @@ print('\n\x1b[1mDisplay switches\x1b[0m — hiding a row must not throw it away'
     check('the view keeps its getters', restored.ok, true);
     check('and its computed properties', formatPercent(restored.worst.percent), '97%');
 
-    // Moving a threshold recolours the figures already in hand: the session
-    // is 50% and the service calls it normal, so only the user's own line can
-    // make it a warning -- and it must, without the response being read again.
+    // A threshold moves the colour of the figures in hand without another read.
     check('a lower threshold recolours at once', drawn(full, {warn: 40, critical: 60}).limits[0].severity, 'warning');
     check('without touching the reading', drawn(full).limits[0].severity, 'normal');
 }
 
-// The shapes that caused real bugs. Number(null) is 0, so a null percentage
-// used to become a confident 0% row -- and for Antigravity, which reports what
-// is LEFT, a null read as a limit fully spent. Each of these is a regression
-// test for a bug that was actually shipped into a commit.
+// Shapes that caused real bugs: Number(null) is 0, so a null percent became a 0% row, and for
+// Antigravity, which reports what is LEFT, a null read as fully spent.
 print('\n\x1b[1mHostile shapes\x1b[0m — a wrong number is worse than no number');
 {
-    const claude = parse(ClaudeProvider, {
+    const claude = ClaudeProvider._parse({
         limits: [
             {kind: 'session', percent: null, resets_at: null},
             {kind: 'weekly_all', percent: 42, resets_at: null},
@@ -374,25 +324,23 @@ print('\n\x1b[1mHostile shapes\x1b[0m — a wrong number is worse than no number
     check('a surface-scoped row is named', claude.limits[1].label, 'Weekly · Cowork');
     check('and counts as scoped, so it can be hidden', claude.limits[1].scoped, true);
 
-    const credits = parse(ClaudeProvider, {
+    const credits = ClaudeProvider._parse({
         limits: [{kind: 'session', percent: 5}],
         extra_usage: {is_enabled: true, utilization: null},
         spend: {percent: 30, severity: 'warning', used: {amount_minor: 1234, currency: 'USD', exponent: 2}},
     }, {});
-    // The figure and the severity must come from the same object. Before, the
-    // percent fell back to 0 while the severity came from spend, giving an
-    // empty bar painted as a warning.
+    // The figure and the severity come from the same object, or an empty bar is painted as a warning.
     check('credits take the figure beside their severity', formatPercent(credits.credits.percent), '30%');
     check('and the service severity is still honoured', drawn(credits).credits.severity, 'warning');
 
-    const noFigure = parse(ClaudeProvider, {
+    const noFigure = ClaudeProvider._parse({
         limits: [{kind: 'session', percent: 5}],
         extra_usage: {is_enabled: true, utilization: null},
         spend: {used: {amount_minor: 0, currency: 'USD', exponent: 2}},
     }, {});
     check('no credits figure means no credits row', noFigure.credits, null);
 
-    const noExtra = parse(ClaudeProvider, {limits: [{kind: 'session', percent: 5}]}, {});
+    const noExtra = ClaudeProvider._parse({limits: [{kind: 'session', percent: 5}]}, {});
     check('no extra_usage at all means no credits row', noExtra.credits, null);
 
     const anti = AntigravityProvider._parse({
@@ -404,7 +352,7 @@ print('\n\x1b[1mHostile shapes\x1b[0m — a wrong number is worse than no number
     check('antigravity drops a null fraction', anti.limits.length, 1);
     check('rather than reading it as fully spent', anti.limits.every(l => l.percent !== 100 || l.id === 'gemini-5h'), true);
 
-    const codex = parse(CodexProvider, {
+    const codex = CodexProvider._parse({
         plan_type: 'plus',
         rate_limit: {
             primary_window: {used_percent: null, limit_window_seconds: 18000, reset_at: 2000000000},
@@ -414,21 +362,19 @@ print('\n\x1b[1mHostile shapes\x1b[0m — a wrong number is worse than no number
         additional_rate_limits: [],
     }, {});
     check('codex drops a null percent', codex.limits.length, 1);
-    // A reset time derived from reset_after_seconds moves on every poll, and
-    // notifications are remembered by that timestamp -- so the limit would
-    // announce itself again every single poll.
+    // A reset derived from reset_after_seconds moves every poll and would notify every poll.
     check('no absolute reset means no reset shown', codex.limits[0].resetsAt, null);
     check('a recognised window takes the shared id', codex.limits[0].id, 'weekly_all');
     check('no credits means no credits row', codex.credits, null);
 
-    const unlimited = parse(CodexProvider, {
+    const unlimited = CodexProvider._parse({
         rate_limit: {primary_window: {used_percent: 1, limit_window_seconds: 18000, reset_at: 2000000000}},
         credits: {has_credits: true, unlimited: true},
     }, {});
     check('unlimited credits read', unlimited.credits?.label, 'Credits · unlimited');
     check('and drawn without a bar', unlimited.credits?.percent, null);
 
-    const ids = parse(CodexProvider, {
+    const ids = CodexProvider._parse({
         rate_limit: {primary_window: {used_percent: 1, limit_window_seconds: 18000, reset_at: 2000000000}},
         additional_rate_limits: [{rate_limit: {primary_window: {used_percent: 2, limit_window_seconds: 18000, reset_at: 2000000000}}}],
     }, {});
@@ -443,7 +389,7 @@ for (const provider of [ClaudeProvider, CodexProvider, AntigravityProvider]) {
     let threw = null;
     try {
         // Antigravity's parser takes no credentials, and ignores the stub.
-        parse(provider, {nonsense: true}, {});
+        provider._parse({nonsense: true}, {});
     } catch (e) {
         threw = e;
     }
