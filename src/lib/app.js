@@ -25,9 +25,9 @@ export class AiUsageApp {
         this._settings = extension.getSettings();
 
         this._http = null;
-        // provider id -> {provider, settings, handlerId, indicator, reading, renewed}, in registry
-        // order; indicator is null while the provider is not live
+        // provider id -> {provider, settings, handlerId, live, reading, renewed}, in registry order
         this._providers = new Map();
+        this._indicator = null;
         this._notified = new Map();   // limit key -> the resets_at (unix seconds) it was notified for
 
         this._settingsId = 0;
@@ -49,17 +49,17 @@ export class AiUsageApp {
                     this._redraw();
                     return;
                 }
-                this._syncButtons();
+                this._syncProviders();
                 this.refresh();
             });
             // A copy per enable, so whatever a provider caches goes with disable().
             this._providers.set(provider.id,
-                {provider: Object.create(provider), settings, handlerId, indicator: null, reading: null, renewed: false});
+                {provider: Object.create(provider), settings, handlerId, live: false, reading: null, renewed: false});
         }
 
         this._settingsId = this._settings.connect('changed', (_s, key) => {
-            if (key === 'panel-box' || key === 'panel-index')
-                this._placeButtons();
+            if ((key === 'panel-box' || key === 'panel-index') && this._indicator)
+                this._place();
             else if (key === 'poll-seconds')
                 this._schedule();
             else if (key === 'renew-login')
@@ -70,7 +70,7 @@ export class AiUsageApp {
         this._interface = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
         this._interfaceId = this._interface.connect('changed::clock-format', () => this._redraw());
 
-        this._syncButtons();
+        this._syncProviders();
         this.refresh();
         this._schedule();
     }
@@ -83,11 +83,11 @@ export class AiUsageApp {
         this._interface.disconnect(this._interfaceId);
         this._interface = null;
 
-        for (const {settings, handlerId, indicator} of this._providers.values()) {
+        for (const {settings, handlerId} of this._providers.values())
             settings.disconnect(handlerId);
-            indicator?.destroy();
-        }
         this._providers.clear();
+        this._indicator?.destroy();
+        this._indicator = null;
 
         this._stopWatchingCredentials();
         if (this._debounceId)
@@ -99,45 +99,44 @@ export class AiUsageApp {
     }
 
     _live() {
-        return [...this._providers.values()].filter(entry => entry.indicator);
+        return [...this._providers.values()].filter(entry => entry.live);
     }
 
     // A provider is live when it is switched on and its command-line tool is
-    // installed.
-    _syncButtons() {
-        let changed = false;
+    // installed. The button exists while one is.
+    _syncProviders() {
         for (const entry of this._providers.values()) {
             const {provider, settings} = entry;
-            let live = settings.get_boolean('enabled');
-            if (live && !GLib.find_program_in_path(provider.cli)) {
+            entry.live = settings.get_boolean('enabled');
+            if (entry.live && !GLib.find_program_in_path(provider.cli)) {
                 Log.debug(`'${provider.cli}' is not installed; leaving ${provider.id} out.`);
-                live = false;
+                entry.live = false;
             }
-            if (live === !!entry.indicator)
-                continue;
-
-            changed = true;
-            if (live) {
-                entry.indicator = this._createButton(provider);
-            } else {
-                entry.indicator.destroy();
-                entry.indicator = null;
+            if (!entry.live)
                 entry.reading = null;
-            }
         }
 
-        if (changed) {
-            this._placeButtons();
-            Log.debug(`Top bar: ${this._live().length} button(s) — ${this._live().map(e => e.provider.id).join(', ')}`);
+        const live = this._live();
+        Log.debug(`Providers: ${live.map(e => e.provider.id).join(', ') || 'none'}`);
+        if (!live.length) {
+            this._indicator?.destroy();
+            this._indicator = null;
+        } else if (this._indicator) {
+            this._redraw();
+        } else {
+            this._place();
         }
         this._watchCredentials();
     }
 
-    _createButton(provider) {
-        const gauge = this._extension.dir.get_child('icons').get_child('ai-usage-symbolic.svg');
+    // addToStatusArea claims the role until the indicator is destroyed, so a
+    // button already placed is built afresh to be placed again. -1, or an
+    // index past the end of the box, appends.
+    _place() {
+        this._indicator?.destroy();
         // Refresh reads every provider and leaves the pop-up open to watch the
         // figures change; the preferences close it.
-        const indicator = new UsageIndicator(provider.icon, gauge, provider.displayName, [
+        const indicator = new UsageIndicator([
             {label: 'Refresh now', icon: 'view-refresh-symbolic', action: () => this.refresh()},
             {label: 'Preferences', icon: 'go-next-symbolic', action: () => {
                 indicator.menu.close(true);
@@ -148,25 +147,9 @@ export class AiUsageApp {
             if (open)
                 this._refreshIfStale();
         });
-        return indicator;
-    }
-
-    // addToStatusArea claims the role until the indicator is destroyed, so a
-    // button already placed is built afresh to be placed again. -1, or an
-    // index past the end of the box, appends.
-    _placeButtons() {
-        const box = this._settings.get_string('panel-box');
-        const index = this._settings.get_int('panel-index');
-
-        let offset = 0;
-        for (const entry of this._live()) {
-            if (entry.indicator.container.get_parent()) {
-                entry.indicator.destroy();
-                entry.indicator = this._createButton(entry.provider);
-            }
-            Main.panel.addToStatusArea(`${this._extension.uuid}-${entry.provider.id}`, entry.indicator,
-                index < 0 ? -1 : index + offset++, box);
-        }
+        this._indicator = indicator;
+        Main.panel.addToStatusArea(this._extension.uuid, indicator,
+            this._settings.get_int('panel-index'), this._settings.get_string('panel-box'));
         this._redraw();
     }
 
@@ -188,7 +171,7 @@ export class AiUsageApp {
         });
     }
 
-    // Sweeping the pointer along open menus would otherwise start a read per button.
+    // Opening the pop-up again and again would otherwise start a read each time.
     _refreshIfStale() {
         const now = GLib.DateTime.new_now_utc();
         if (this._cancellable || this._live().some(e => e.reading && now.difference(e.reading.at) < FRESH_FOR_US))
@@ -196,7 +179,7 @@ export class AiUsageApp {
         this.refresh();
     }
 
-    // Each button draws as its own provider answers, so a slow one holds up no other.
+    // The button draws as each provider answers, so a slow one holds up no other.
     async _readAll(cancellable) {
         await Promise.all(this._live().map(async entry => {
             const reading = await entry.provider.read(this._http, cancellable);
@@ -232,25 +215,30 @@ export class AiUsageApp {
         }
     }
 
-    // A provider that has not answered yet gets null ("Reading usage…").
+    // A provider that has not answered yet has a null reading ("Reading usage…").
     _redraw() {
+        if (!this._indicator)
+            return;
+
         const s = this._settings;
         const thresholds = {warn: s.get_int('warn-percent'), critical: s.get_int('critical-percent')};
         const options = {
             showPercent: s.get_boolean('show-percent'),
             hideUnavailable: s.get_boolean('hide-unavailable'),
             limit: s.get_string('primary-limit'),
+            tabs: s.get_string('tab-position'),
             resetFormat: s.get_string('reset-format'),
             clock: this._interface.get_string('clock-format'),
         };
-        for (const {settings, indicator, reading} of this._live()) {
-            const shown = reading && applyOptions(reading, {
+        this._indicator.setReadings(this._live().map(({provider, settings, reading}) => ({
+            id: provider.id,
+            name: provider.displayName,
+            reading: reading && applyOptions(reading, {
                 showPerModel: settings.get_boolean('show-per-model'),
                 showBreakdown: settings.get_boolean('show-breakdown'),
                 showCredits: settings.get_boolean('show-credits'),
-            }, thresholds);
-            indicator.setReading(shown, options);
-        }
+            }, thresholds),
+        })), options);
     }
 
     _cancelInFlight() {

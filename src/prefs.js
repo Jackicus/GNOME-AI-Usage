@@ -19,24 +19,25 @@ export default class AiUsagePreferences extends ExtensionPreferences {
 
     _buttonPage(settings) {
         const page = new Adw.PreferencesPage({
-            title: 'Buttons',
+            title: 'Button',
             icon_name: 'preferences-desktop-appearance-symbolic',
         });
 
         const shown = new Adw.PreferencesGroup({
-            title: 'What they show',
-            description: 'A pop-up always lists every limit. This is the single figure on the button itself.',
+            title: 'What it shows',
+            description: 'The pop-up always lists every limit. This is the single figure on the button itself: '
+                + "the highest of each provider's.",
         });
-        shown.add(comboRow(settings, 'primary-limit', 'Figure on each button', [
+        shown.add(comboRow(settings, 'primary-limit', "Each provider's figure", [
             ['highest', 'Whichever is highest'],
             ['session', 'Current session'],
             ['weekly', 'This week'],
         ]));
         shown.add(switchRow(settings, 'show-percent', 'Show the percentage',
-            'With this off a button is its icon alone, tinted by how much has been used.'));
-        shown.add(switchRow(settings, 'hide-unavailable', 'Hide a button with nothing to show',
+            'With this off the button is just "AI", tinted by how much has been used.'));
+        shown.add(switchRow(settings, 'hide-unavailable', 'Hide a provider with nothing to show',
             'Signed out, login expired or unreadable. The tool refreshes its login only while it runs, '
-            + 'so the button returns by itself once you have used it.'));
+            + 'so its tab returns by itself once you have used it. With none left the button goes too.'));
         page.add(shown);
 
         const popup = new Adw.PreferencesGroup({
@@ -45,6 +46,10 @@ export default class AiUsagePreferences extends ExtensionPreferences {
                 + 'and in the notifications alike. An exact time is in your own timezone, on the clock your desktop '
                 + 'is set to.',
         });
+        popup.add(comboRow(settings, 'tab-position', 'Provider tabs', [
+            ['top', 'At the top'],
+            ['bottom', 'At the bottom'],
+        ]));
         popup.add(comboRow(settings, 'reset-format', 'Reset times', [
             ['auto', 'Automatic — a countdown when it is close, a time when it is not'],
             ['relative', 'How long until it resets'],
@@ -54,8 +59,8 @@ export default class AiUsagePreferences extends ExtensionPreferences {
         page.add(popup);
 
         const place = new Adw.PreferencesGroup({
-            title: 'Where they sit',
-            description: 'The buttons go side by side in the chosen end of the top bar. Which neighbours they land '
+            title: 'Where it sits',
+            description: 'The button goes in the chosen end of the top bar. Which neighbours it lands '
                 + 'between also depends on what other extensions have put there.',
         });
         place.add(comboRow(settings, 'panel-box', 'Part of the top bar', [
@@ -63,7 +68,7 @@ export default class AiUsagePreferences extends ExtensionPreferences {
             ['center', 'Centre, by the clock'],
             ['right', 'Right, among the status icons'],
         ]));
-        place.add(spinRow(settings, 'panel-index', 'Position', 'Where the first button goes, counting from the middle of the bar; -1 puts them last.', -1, 20));
+        place.add(spinRow(settings, 'panel-index', 'Position', 'Counting from the middle of the bar; -1 puts it last.', -1, 20));
         page.add(place);
 
         const colour = new Adw.PreferencesGroup({
@@ -112,7 +117,7 @@ export default class AiUsagePreferences extends ExtensionPreferences {
             description: 'This extension never signs you in and never stores a password. It reads the login that each '
                 + "provider's own command-line tool has already saved, so signing in and out stays in one place. "
                 + 'A provider needs that tool installed and already signed in; one whose tool is missing gets no '
-                + 'button whatever its switch says.',
+                + 'tab whatever its switch says.',
         });
 
         for (const provider of PROVIDERS)
@@ -142,8 +147,6 @@ export default class AiUsagePreferences extends ExtensionPreferences {
                 ? `${tool} found at ${path}`
                 : `${tool} is not installed — this provider is left out`,
         });
-        // The button's icon is a generic one, so this is where it is matched to a name.
-        row.add_prefix(new Gtk.Image({icon_name: provider.icon}));
 
         const settings = providerSettings(this.dir, provider.id);
 

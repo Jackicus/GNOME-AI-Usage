@@ -87,12 +87,9 @@ Re-run that probe before changing a command or after a CLI major version.
 2. Write `src/lib/providers/<id>.js` mapping the response onto `Limit`s, using
    `common.js` (Readings, login files, labels, timestamps, failures) and
    `stringOrNull`/`numberOrNull` from `usage.js` for outside data.
-   The provider is an object: `id` (the settings path and the panel role),
+   The provider is an object: `id` (the settings path and its tab),
    `displayName`, `cli` (looked for on `PATH`) and `cliName` (named in the
-   sign-in message), `icon` (a stock Adwaita symbolic's name that no other
-   provider uses, never the company's mark or one drawn after it: README,
-   Credits and trademarks; `make assets` checks it), `capabilities`
-   (which of `perModel`, `breakdown`, `credits` it can honour),
+   sign-in message), `capabilities` (which of `perModel`, `breakdown`, `credits` it can honour),
    `renewArgs` (optional: the CLI's arguments that make it refresh its own login,
    below), `credentialsFile()` (watched, so the tool's refresh is read at once) and
    `read(http, cancellable)`, resolving to a `Reading`, the login read afresh

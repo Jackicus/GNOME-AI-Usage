@@ -23,7 +23,6 @@ export const AntigravityProvider = {
     displayName: 'Antigravity',
     cli: 'agy',
     cliName: 'the Antigravity CLI (agy)',
-    icon: 'document-edit-symbolic',
 
     capabilities: {
         // Its buckets per model family are the account's only limits.

@@ -27,7 +27,6 @@ export const ClaudeProvider = {
     displayName: 'Claude',
     cli: 'claude',
     cliName: 'Claude Code',
-    icon: 'emoji-objects-symbolic',
     // Run to refresh an expired login: Claude Code renews its own as it starts.
     renewArgs: ['doctor'],
 

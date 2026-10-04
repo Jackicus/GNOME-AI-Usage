@@ -10,6 +10,10 @@
         <value nick="center" value="1"/>
         <value nick="right" value="2"/>
     </enum>
+    <enum id="org.gnome.shell.extensions.ai-usage.tab-position">
+        <value nick="top" value="0"/>
+        <value nick="bottom" value="1"/>
+    </enum>
     <enum id="org.gnome.shell.extensions.ai-usage.reset-format">
         <value nick="auto" value="0"/>
         <value nick="relative" value="1"/>
@@ -21,19 +25,19 @@
 
         <key name="primary-limit" enum="org.gnome.shell.extensions.ai-usage.primary-limit">
             <default>'session'</default>
-            <summary>Which limit a button shows</summary>
-            <description>"session": the current session; "weekly": the week's whole-account limit; each falls back to the highest. "highest": the limit closest to being used up.</description>
+            <summary>Which limit each provider contributes to the button</summary>
+            <description>"session": the current session; "weekly": the week's whole-account limit; each falls back to the highest. "highest": the limit closest to being used up. The button shows the highest of the providers' figures.</description>
         </key>
         <key name="show-percent" type="b">
             <default>true</default>
-            <summary>Show the percentage beside the icon</summary>
-            <description>With this off a button is its icon alone, tinted by how much has been used.</description>
+            <summary>Show the percentage beside "AI"</summary>
+            <description>With this off the button is just "AI", tinted by how much has been used.</description>
         </key>
 
         <key name="hide-unavailable" type="b">
             <default>true</default>
-            <summary>Hide a button that has no figure to show</summary>
-            <description>A provider that is signed out, whose stored login has expired or that could not be read has no button until it has a figure. It is still read, so the button returns by itself.</description>
+            <summary>Hide a provider that has no figure to show</summary>
+            <description>A provider that is signed out, whose stored login has expired or that could not be read has no tab until it has a figure, and the button is hidden while no provider has one. They are still read, so they return by themselves.</description>
         </key>
 
         <key name="renew-login" type="b">
@@ -48,16 +52,22 @@
             <description>"auto": a countdown under a day away, then a weekday and time. "relative": the countdown. "absolute": the time. "both": the countdown, then the time in brackets.</description>
         </key>
 
+        <key name="tab-position" enum="org.gnome.shell.extensions.ai-usage.tab-position">
+            <default>'top'</default>
+            <summary>Where the provider tabs sit in the pop-up</summary>
+            <description>"top" or "bottom" of the pop-up.</description>
+        </key>
+
         <key name="panel-box" enum="org.gnome.shell.extensions.ai-usage.panel-box">
             <default>'right'</default>
-            <summary>Which end of the top bar the buttons sit at</summary>
+            <summary>Which end of the top bar the button sits at</summary>
             <description>"right" among the status icons, "center" beside the clock, "left" beside Activities.</description>
         </key>
         <key name="panel-index" type="i">
             <default>0</default>
             <range min="-1" max="20"/>
             <summary>Position within that end of the top bar</summary>
-            <description>Where the first button goes: 0 is the end nearest the middle of the bar; -1 puts them last.</description>
+            <description>Where the button goes: 0 is the end nearest the middle of the bar; -1 puts it last.</description>
         </key>
 
         <key name="poll-seconds" type="i">
@@ -92,7 +102,7 @@
         <key name="enabled" type="b">
             <default>true</default>
             <summary>Read this provider</summary>
-            <description>Off, the provider is not read and has no button. A provider whose command-line tool is not installed is left out either way.</description>
+            <description>Off, the provider is not read and has no tab. A provider whose command-line tool is not installed is left out either way.</description>
         </key>
         <key name="show-per-model" type="b">
             <default>true</default>

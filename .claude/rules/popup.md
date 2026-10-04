@@ -6,11 +6,17 @@ paths:
 
 # The button and its pop-up
 
-* The pop-up copies Claude Code's `/usage`: name (the one expanding column),
-  dimmed reset, percentage in a fixed `min-width` cell, bar underneath. Refresh
-  and preferences are the shell's `icon-button flat` at the header's right end,
-  dimmed on the icon (not the button, or the hover background dims too) and lit
-  on hover/focus by `actionButton()`. The empty state still gets a header.
+* The pop-up's rows copy Claude Code's `/usage`: name (the one expanding column),
+  dimmed reset, percentage in a fixed `min-width` cell, bar underneath. A tab row
+  (top or bottom, `moveMenuItem()` in `setReadings()`) holds the providers as the
+  shell's `button flat`, whose `:checked` look marks the open one, and refresh and
+  preferences as the shell's `icon-button flat` at its right end, dimmed on the
+  icon (not the button, or the hover background dims too) and lit on hover/focus
+  by `actionButton()`. The tabs are rebuilt only when the providers shown change,
+  so a redraw does not take the keyboard focus off one.
+* The menu has a fixed `width`, wide enough for Antigravity's longest label, so
+  it does not move when another tab is chosen. The plan is a dimmed caption row
+  above the limits.
 * The bars are the shell's `BarLevel`, drawn from `-barlevel-*` properties on
   `.ai-usage-bar` and its severity class. It reads `-barlevel-overdrive-color`
   too, so that is set though never drawn. A row whose `percent` is null (credits

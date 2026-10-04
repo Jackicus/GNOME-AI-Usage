@@ -1,16 +1,6 @@
 /* Sizes are taken from the shell's own theme (.popup-menu-item, .quick-settings,
    .slider). No foreground colour is hardcoded. */
 
-.ai-usage-panel-box {
-    spacing: 4px;
-}
-
-/* As the shell's .panel-status-indicators-box does; the margin made the button lopsided. */
-.ai-usage-panel-box .system-status-icon {
-    padding: 0;
-    margin: 0;
-}
-
 .ai-usage-panel-label {
     font-feature-settings: "tnum";
 }
@@ -24,27 +14,30 @@
     color: #e01b24;
 }
 
-/* A Quick Settings panel's width: two 12em tiles, 12px apart, in 18px of padding. */
+/* Fixed, so the pop-up does not move when another provider's tab is chosen, and wide
+   enough for Antigravity's longest label (measured: a Quick Settings panel is 27em). */
 .ai-usage-menu {
-    min-width: 27em;
+    width: 32em;
 }
 
 /* With .popup-menu-content's 6px, 19px of white space on all four sides as seen. */
-.ai-usage-header {
+.ai-usage-tabs-row {
     padding-top: 9px;
     padding-bottom: 6px;
 }
 
-.ai-usage-header-row {
+.ai-usage-tabs-box {
     spacing: 8px;
 }
 
-.ai-usage-provider {
-    font-weight: bold;
+.ai-usage-tabs {
+    spacing: 4px;
 }
 
-.ai-usage-plan {
-    font-size: 0.9em;
+/* The shell's flat button, whose :checked look marks the open tab; a pill, as the icon buttons beside it. */
+.ai-usage-tab {
+    border-radius: 999px;
+    padding: 3px 12px;
 }
 
 /* .popup-menu-item's own 9px. */
@@ -116,6 +109,11 @@
 .ai-usage-caption-row {
     padding-top: 2px;
     padding-bottom: 6px;
+}
+
+/* The plan under a tab, or at the top when the tabs are at the bottom. */
+.ai-usage-plan {
+    padding-top: 6px;
 }
 
 /* With .popup-menu-content's 6px, the sides' 18px. Last, to outweigh the row's own padding. */

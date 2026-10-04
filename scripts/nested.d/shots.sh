@@ -2,7 +2,7 @@
 # data (scripts/nested.d/stand-in.sh), never over yours.
 #
 #   ./scripts/nested.sh shots [--light] [--out DIR]
-#                                     start a stand-in nested shell (headless), open a
+#                                     start a stand-in nested shell (headless), open the
 #                                     button's pop-up and the preferences, write the
 #                                     pictures to docs/screenshots/ (or DIR), and stop
 #                                     it; --light does the top bar and the pop-up again
@@ -13,12 +13,11 @@
 # provider is polled at once, and the slowest one sets this: Antigravity keeps
 # its login in the secret service, a throwaway bus has none, and the lookup ends
 # in a D-Bus activation timeout about 25 seconds later, after which it falls
-# back to the stand-in token file. Until it does, that button is still an
-# ellipsis -- which is wider than what it settles on, and so moves every other
-# button along the bar.
+# back to the stand-in token file. Until it does, the button has no figure for
+# Antigravity, and its percentage can change when that one arrives.
 SHOTS_SETTLE=35
 
-# Where to click, on a 1600x900 monitor with the buttons where they go by
+# Where to click, on a 1600x900 monitor with the button where it goes by
 # default (the right-hand end, nearest the middle). Measured, because the shell
 # offers no way to ask an actor where it is: take a `shot` and look. Measured
 # *while the driver holds its input session*, which is the only state a click
@@ -28,14 +27,16 @@ SHOTS_SETTLE=35
 # by a later run of the driver (a later 'do'), after the one that clicked has
 # exited.
 #
-# Anything that changes how wide a button is moves this: the stylesheet's panel
-# padding, the icon size, how many digits the figure has, the font. A stale
+# Anything that changes how wide the button is moves this: the stylesheet's panel
+# padding, how many digits the figure has, the font. A stale
 # coordinate does not fail -- it clicks the bar, nothing opens, and the pop-up
 # picture is of the wallpaper. Re-measure with 'start --stand-in --headless' and
-# a 'do "click 1235 16" "shot FILE 0 0 1600 36"'.
-SHOTS_CLAUDE_BUTTON="1235 16"
+# a 'do "click 1368 16" "shot FILE 0 0 1600 36"'.
+SHOTS_BUTTON="1368 16"
+# The pop-up opens on the provider the button's figure comes from; this is Claude's tab.
+SHOTS_CLAUDE_TAB="1168 68"
 # The preferences window opens centred, so its tabs are at fixed points too.
-SHOTS_TAB_BUTTONS="677 201"
+SHOTS_TAB_BUTTON="677 201"
 SHOTS_TAB_READINGS="799 201"
 SHOTS_TAB_PROVIDERS="922 201"
 
@@ -86,24 +87,23 @@ shots_take() {
     sleep "$SHOTS_SETTLE"
 
     info "Photographing the top bar..."
-    # A strip of the right-hand end, where the buttons go by default. Nothing is
+    # A strip of the right-hand end, where the button goes by default. Nothing is
     # clicked first, so this picture has no recording indicator in it at all.
     shots_do "shot $out/top-bar$suffix.png 1100 0 500 36" || return 1
-    # The tighter crop the README opens with: the three buttons and the icons
-    # either side of them, and no more. Taken from the shell rather than cut out
-    # of the strip above by hand afterwards, because a picture nobody can
-    # regenerate goes stale the first time the buttons move. Dark only; the
-    # README has one.
+    # The tighter crop the README opens with: the button and the icons either
+    # side of it, and no more. Taken from the shell rather than cut out of the
+    # strip above by hand afterwards, because a picture nobody can regenerate
+    # goes stale the first time the button moves. Dark only; the README has one.
     if (( ! light )); then
-        shots_do "shot $out/top-bar-cropped.png 1248 0 350 28" || return 1
+        shots_do "shot $out/top-bar-cropped.png 1320 0 280 28" || return 1
     fi
 
-    info "Opening a button's pop-up..."
-    shots_do "click $SHOTS_CLAUDE_BUTTON" "wait 1.5" || return 1
+    info "Opening the pop-up..."
+    shots_do "click $SHOTS_BUTTON" "wait 1.5" "click $SHOTS_CLAUDE_TAB" "wait 1" || return 1
     # The recording indicator outlives the process that asked for it by a few
     # seconds, so wait it out rather than photograph the shell mid-tidy. Six is
     # measured: it was still there at four and gone by six.
-    shots_do "wait 6" "shot $out/pop-up$suffix.png 1016 0 569 330" || return 1
+    shots_do "wait 6" "shot $out/pop-up$suffix.png 1092 0 508 340" || return 1
     shots_do "key Escape" || return 1
 
     # The preferences are a GTK window and follow their own colour setting
@@ -118,8 +118,8 @@ shots_take() {
     sleep 5
     # The window step takes the focused window with its frame. The first page is
     # the one it opens on, but say so rather than rely on it.
-    shots_do "click $SHOTS_TAB_BUTTONS" "wait 1" || return 1
-    shots_do "window $out/preferences-buttons.png" || return 1
+    shots_do "click $SHOTS_TAB_BUTTON" "wait 1" || return 1
+    shots_do "window $out/preferences-button.png" || return 1
     shots_do "click $SHOTS_TAB_READINGS" "wait 1" || return 1
     shots_do "window $out/preferences-readings.png" || return 1
     shots_do "click $SHOTS_TAB_PROVIDERS" "wait 1" || return 1
