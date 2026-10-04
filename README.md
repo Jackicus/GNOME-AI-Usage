@@ -72,10 +72,11 @@ sends it to that provider's own server, the same request the provider's tool mak
 | Antigravity | the login in the system keyring, or `~/.gemini/antigravity-cli/antigravity-oauth-token` | `cloudcode-pa.googleapis.com` |
 | Codex | `auth.json` in `$CODEX_HOME`, or `~/.codex/auth.json` | `chatgpt.com` |
 
-Nothing else goes anywhere. The extension never writes to these files, never keeps a
-token between readings and never logs one. What it stores is its own settings, in
-dconf. These are the endpoints the tools themselves use, not published APIs, so a
-provider may change them; the button then says the usage could not be read.
+Nothing else goes anywhere, and the only process it starts is the opt-in `doctor` run. The
+extension never writes to these files, never keeps a token between readings and never logs
+one. What it stores is its own settings, in dconf. These are the endpoints the tools
+themselves use, not published APIs, so a provider may change them; the pop-up then says the
+usage could not be read.
 
 ## Install
 
