@@ -3,8 +3,8 @@
 Shared rules for every extension come from the GNOME-EXTENSIONS kit: `../CLAUDE.md` and `../.claude/rules/` (loaded with this file), and the `gnome-ext:*` skills. `.claude/kit.sh` pulls the kit at session start, or, with no kit beside this repository, fetches it and prints its rules into the session.
 
 A GNOME Shell extension (UUID `ai-usage@jackicus`, `version-name` 0.1, shell 50)
-that puts a button in the top bar per AI subscription, showing how much of each
-rate limit is used and when it resets. Claude and Antigravity are verified
+that puts one button in the top bar, with a tab per AI subscription in its pop-up,
+showing how much of each rate limit is used and when it resets. Claude and Antigravity are verified
 against live accounts; Codex against a live free-plan account (codex-cli
 0.160.0, 2026-10-02), its paid-plan windows only from openai/codex's source.
 
@@ -14,10 +14,10 @@ against live accounts; Codex against a live free-plan account (codex-cli
 own command-line tool has already stored, and does nothing else with it:
 
 * The CLI is a hard requirement: a provider whose command is not on `PATH` gets
-  no button at all, rather than a broken one.
+  no tab at all, rather than a broken one.
 * It never refreshes a token. Refreshing Claude's rotates the refresh token and
   could sign the user out of Claude Code. A rejected token (401/403) is
-  `Status.EXPIRED`, and the button asks the user to run the tool once.
+  `Status.EXPIRED`, and its tab asks the user to run the tool once.
 * `renew-login` (off by default) is the one way past that: once per expiry it
   runs the tool's own `doctor` (`renewArgs`), which refreshes the login as the
   tool starts, and the credentials watch reads the result. The tool does the
@@ -37,12 +37,11 @@ src/prefs.js            preferences (own process); every row binds to a key
 src/stylesheet.css      sizes taken from the shell's own theme; why, beside
                         each rule
 src/schemas/            global schema + relocatable per-provider schema
-src/icons/              the gauge, every button's fallback (no company's mark
-                        ships: README, Credits and trademarks)
-src/lib/app.js          when to read, which buttons exist and where they sit,
-                        notifications, the desktop clock-format setting
-src/lib/indicator.js    one panel button and its pop-up; draws the Reading it
-                        is handed -- no polling, no settings, no providers
+src/lib/app.js          when to read, which providers are live, the one button and
+                        where it sits, notifications, the desktop clock-format setting
+src/lib/indicator.js    the panel button and its pop-up with a tab per provider;
+                        draws the Readings it is handed -- no polling, no settings,
+                        no providers
 src/lib/usage.js        Limit, Reading, Status, Severity and their wording;
                         no shell imports, so scripts/ can load it
 src/lib/settings.js     per-provider settings, capabilities -> switches, and
@@ -58,27 +57,30 @@ src/lib/providers/codex.js        Codex, via the Codex CLI's auth.json
 tests/fixtures/         saved responses (invented values), for `make parsers`
 ```
 
-What ships is `./scripts/ext.conf`'s `EXT_SHIP` (`lib/` with `lib/providers/`,
-and `icons/`); `make pack` refuses a zip holding anything else. The kit's
+What ships is `./scripts/ext.conf`'s `EXT_SHIP` (`lib/` with `lib/providers/`);
+`make pack` refuses a zip holding anything else. The kit's
 `./scripts/dev-extension.js`, the `make link` entry point, also turns the debug
 log on (`lib/log.js`'s `setVerbose`) and names its stage after a checksum of
 `lib/`'s files.
 
 ## How it behaves
 
-* **One button per live provider** (`enabled` and its CLI on `PATH`), each with
-  its icon, since a percentage must sit beside one telling its subscription apart.
-  `hide-unavailable` (default on) hides a button that has no figure, or no
-  reading yet; it is still read, so it returns when the tool refreshes its login. `_syncButtons()`
-  diffs against the live list, so toggling needs no restart. Role
-  `${uuid}-${providerId}`; placed in `panel-box` from `panel-index`, in registry
-  order. The icon is the provider's `icon`, a stock Adwaita symbolic (the
-  marks need their owners' written permission), with the gauge as `fallback_gicon`
-  under a theme that lacks it; always 16px, and `show-percent` only hides the
-  figure. The preferences show it beside the provider's name.
-* Destroying an indicator releases its role, so a provider toggles without a
-  restart, and `_placeButtons()` places every button through `addToStatusArea`,
-  building afresh one that was already placed (a move, a provider switched on).
+* **One button, `AI` and a percentage**, while a provider is live (`enabled` and
+  its CLI on `PATH`); the percentage is the highest of the live providers'
+  figures, each picked by `primary-limit`, and tints the label by its severity.
+  `show-percent` off leaves `AI`. No icon ships: the providers' marks need their
+  owners' written permission (README, Credits and trademarks), so the tabs carry
+  the names and nothing is drawn after a mark.
+* **The pop-up has a tab per live provider**, at the top or, by `tab-position`,
+  the bottom, with refresh and preferences at the end of the tab row. It opens on
+  the provider the button's figure comes from; a click is for as long as it stays
+  open. `hide-unavailable` (default on) drops the tab of a provider with no figure,
+  or no reading yet, and the button with the last tab; it is still read, so it
+  returns when the tool refreshes its login. `_syncProviders()` diffs against the
+  live list, so toggling needs no restart.
+* Role `${uuid}`; placed in `panel-box` at `panel-index`. Destroying the
+  indicator releases the role, and `_place()` builds a new one to place again
+  through `addToStatusArea` (a move, the first provider switched on).
 * **Reading is lazy.** A timer (`poll-seconds`) is the fallback, skipped when
   the session has been idle for 10 minutes. The real triggers are the stored
   login changing on disk (file monitor, 2 s debounce) and opening a pop-up —
@@ -99,7 +101,8 @@ log on (`lib/log.js`'s `setVerbose`) and names its stage after a checksum of
 ## Settings
 
 Global keys: `primary-limit` (`session` default, `highest`, `weekly`),
-`show-percent`, `hide-unavailable`, `renew-login`, `reset-format`, `panel-box`, `panel-index`, `poll-seconds`,
+`show-percent`, `hide-unavailable`, `renew-login`, `reset-format`, `tab-position`
+(`top` default, `bottom`), `panel-box`, `panel-index`, `poll-seconds`,
 `warn-percent`, `critical-percent`, `notify-percent`.
 
 **Per-provider keys are a relocatable schema** at
@@ -126,16 +129,13 @@ None.
     unknown shapes degrade rather than throw.
   * `imports`: walks everything `prefs.js` reaches, fails on St, Clutter, Meta,
     Shell, Soup or `resource:///org/gnome/shell/`, then loads the shared modules.
-  * `assets`: every shipped icon loads through gdk-pixbuf; each provider names a
-    distinct icon that Adwaita ships.
 
   CI adds `libsecret` (`.github/ci-packages`): `antigravity.js` imports
-  `gi://Secret`, and the imports and parsers checks load it; and
-  `adwaita-icon-theme`, for `assets`. It ends with `size`:
+  `gi://Secret`, and the imports and parsers checks load it. It ends with `size`:
   src/ JavaScript against `EXT_BUDGET_LINES` (1900: the size after the simplify
   pass of 2026-10-02, 1806 lines, rounded up to the next hundred).
 * `make providers` — the real provider modules under plain `gjs`, printing what
-  each button would show. Tells a data problem from a drawing problem. It reads
+  each tab would show. Tells a data problem from a drawing problem. It reads
   the real stored logins and goes to the network: ask first.
 
 ### The nested shell
@@ -166,8 +166,8 @@ extension's own:
 Input is a RemoteDesktop session whose recording indicator stays in the top
 bar until the driver exits, so a click and its photo are separate `do` calls,
 and the click coordinates in `./scripts/nested.d/shots.sh`
-(`SHOTS_CLAUDE_BUTTON`, `SHOTS_TAB_*`) are measured with the indicator present.
+(`SHOTS_BUTTON`, `SHOTS_CLAUDE_TAB`, `SHOTS_TAB_*`) are measured with the indicator present.
 Antigravity's keyring lookup times out on the nested bus after about 25 s
 (`SHOTS_SETTLE`, and an expected "keyring lookup failed" log line); under
 `--stand-in` it then falls back to the stand-in token file, and under a plain
-start its button shows amber with no figure.
+start its tab has no figure, so it is hidden.

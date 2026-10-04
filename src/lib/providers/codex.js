@@ -26,7 +26,6 @@ export const CodexProvider = {
     displayName: 'Codex',
     cli: 'codex',
     cliName: 'the Codex CLI',
-    icon: 'utilities-terminal-symbolic',
     renewArgs: ['doctor'],
 
     capabilities: {

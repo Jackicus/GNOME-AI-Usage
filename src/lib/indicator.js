@@ -1,5 +1,4 @@
 import Clutter from 'gi://Clutter';
-import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
@@ -12,8 +11,6 @@ import {Severity, Status, formatBreakdown, formatPercent, formatReset} from './u
 
 // Secondary text is dimmed with actor opacity, so it suits light and dark menus.
 const DIM_OPACITY = 160;
-
-const ICON_SIZE = 16;
 
 // primary-limit -> the limit id it asks for; anything else shows the worst.
 const PRIMARY_LIMIT = {session: 'session', weekly: 'weekly_all'};
@@ -41,97 +38,126 @@ function explain(reading) {
     }
 }
 
+// The figure a provider contributes to the button: its primary limit, else its worst.
+function figureOf(reading, limit) {
+    return reading?.ok ? reading.limits.find(l => l.id === PRIMARY_LIMIT[limit]) ?? reading.worst : null;
+}
+
 export const UsageIndicator = GObject.registerClass(
 class UsageIndicator extends PanelMenu.Button {
-    _init(iconName, fallbackFile, name, actions) {
-        super._init(0.5, `${name} usage`, false);
+    _init(actions) {
+        super._init(0.5, 'AI usage', false);
 
         // menu.box is the actor that gets `.popup-menu-content`, so the width goes there.
         this.menu.box.add_style_class_name('ai-usage-menu');
 
-        this._box = new St.BoxLayout({style_class: 'ai-usage-panel-box'});
-        this._icon = new St.Icon({
-            // A stock icon, so no company's mark ships; the gauge stands in
-            // under an icon theme that lacks it.
-            icon_name: iconName,
-            fallback_gicon: new Gio.FileIcon({file: fallbackFile}),
-            icon_size: ICON_SIZE,
-            style_class: 'system-status-icon',
-        });
         this._label = new St.Label({
+            text: 'AI',
             style_class: 'ai-usage-panel-label',
             y_align: Clutter.ActorAlign.CENTER,
         });
-        this._box.add_child(this._icon);
-        this._box.add_child(this._label);
-        this.add_child(this._box);
+        this.add_child(this._label);
 
-        this._name = name;
-        this._actions = actions;
+        this._rows = [];
+        this._top = null;
+        this._options = null;
+        this._selected = null;
+        this._tabIds = '';
 
+        this._tabs = new St.BoxLayout({style_class: 'ai-usage-tabs', x_expand: true});
+        this._tabsItem = tabsItem(this._tabs, actions);
         this._section = new PopupMenu.PopupMenuSection();
+        this.menu.addMenuItem(this._tabsItem);
         this.menu.addMenuItem(this._section);
+
+        // The pop-up opens on the provider the button's figure comes from.
+        this.menu.connect('open-state-changed', (_menu, open) => {
+            if (open) {
+                this._selected = null;
+                this._renderMenu();
+            }
+        });
     }
 
-    // reading is null until the provider has answered. options: showPercent,
-    // hideUnavailable, limit (primary-limit), resetFormat, clock ('12h' or '24h').
-    setReading(reading, options) {
-        this._renderPanel(reading, options);
-        this._renderMenu(reading, options);
+    // entries: [{id, name, reading}], one per live provider; a reading is null
+    // until its provider has answered. options: showPercent, hideUnavailable,
+    // limit (primary-limit), tabs ('top' or 'bottom'), resetFormat, clock
+    // ('12h' or '24h').
+    setReadings(entries, options) {
+        const rows = entries.map(entry => ({...entry, figure: figureOf(entry.reading, options.limit)}));
+        this._top = rows.filter(row => row.figure).sort((a, b) => b.figure.percent - a.figure.percent)[0];
+        this._rows = options.hideUnavailable ? rows.filter(row => row.figure) : rows;
+        this._options = options;
+
+        this._renderPanel(rows);
+        this.menu.moveMenuItem(this._tabsItem, options.tabs === 'top' ? 0 : 1);
+        if (this._rows.length)
+            this._renderMenu();
     }
 
-    _renderPanel(reading, {showPercent, limit, hideUnavailable}) {
-        const shown = reading?.ok
-            ? reading.limits.find(l => l.id === PRIMARY_LIMIT[limit]) ?? reading.worst
-            : null;
+    _renderPanel(rows) {
+        const {showPercent, hideUnavailable} = this._options;
 
-        this.container.visible = !hideUnavailable || shown !== null;
+        this.container.visible = !hideUnavailable || !!this._top;
         if (!this.container.visible)
             this.menu.close(true);
 
-        if (!reading) {
-            this._label.set_text('…');
-            this._label.visible = showPercent;
-            this._setPanelSeverity(Severity.NORMAL);
-            return;
-        }
-
         // No figure: amber when the fix is the user's (signing in again).
-        if (!shown) {
-            this._label.set_text('');
-            this._label.visible = false;
-            const broken = reading.status === Status.EXPIRED || reading.status === Status.SIGNED_OUT;
-            this._setPanelSeverity(broken ? Severity.WARNING : Severity.NORMAL);
-            return;
+        const broken = rows.some(row => row.reading?.status === Status.EXPIRED || row.reading?.status === Status.SIGNED_OUT);
+        const severity = this._top ? this._top.figure.severity : broken ? Severity.WARNING : Severity.NORMAL;
+        for (const cls of Object.values(SEVERITY_CLASS))
+            this._label.remove_style_class_name(cls);
+        this._label.add_style_class_name(SEVERITY_CLASS[severity]);
+
+        this._label.set_text(this._top && showPercent ? `AI ${formatPercent(this._top.figure.percent)}` : 'AI');
+    }
+
+    _selectedRow() {
+        return this._rows.find(row => row.id === this._selected) ?? this._top ?? this._rows[0];
+    }
+
+    // The tabs are rebuilt only when the providers shown change, so a redraw
+    // does not take the keyboard focus off one.
+    _renderTabs() {
+        const ids = this._rows.map(row => row.id).join();
+        if (ids !== this._tabIds) {
+            this._tabIds = ids;
+            this._tabs.destroy_all_children();
+            for (const row of this._rows) {
+                const tab = new St.Button({label: row.name, style_class: 'button flat ai-usage-tab', can_focus: true});
+                tab.connect('clicked', () => {
+                    this._selected = row.id;
+                    this._renderMenu();
+                });
+                this._tabs.add_child(tab);
+            }
         }
 
-        this._label.set_text(formatPercent(shown.percent));
-        this._label.visible = showPercent;
-        this._setPanelSeverity(shown.severity);
+        const selected = this._selectedRow();
+        this._tabs.get_children().forEach((tab, i) => {
+            tab.checked = this._rows[i] === selected;
+        });
     }
 
-    _setPanelSeverity(severity) {
-        for (const cls of Object.values(SEVERITY_CLASS))
-            this._box.remove_style_class_name(cls);
-        this._box.add_style_class_name(SEVERITY_CLASS[severity]);
-    }
-
-    _renderMenu(reading, options) {
+    _renderMenu() {
+        this._renderTabs();
         this._section.removeAll();
 
-        // With nothing read yet the header still carries the actions.
-        if (!reading) {
-            this._section.addMenuItem(headerItem(this._name, null, this._actions));
+        const {reading} = this._selectedRow();
+        if (reading)
+            this._addReading(reading, this._options);
+        else
             this._section.addMenuItem(captionItem('Reading usage…'));
-        } else {
-            this._addReading(reading, options);
-        }
         // St has no :last-child; the stylesheet pads the marked row.
         this._section.box.get_children().at(-1).add_style_class_name('ai-usage-last');
     }
 
     _addReading(reading, {resetFormat, clock}) {
-        this._section.addMenuItem(headerItem(reading.displayName, reading.plan, this._actions));
+        if (reading.plan) {
+            const plan = captionItem(reading.plan);
+            plan.add_style_class_name('ai-usage-plan');
+            this._section.addMenuItem(plan);
+        }
 
         if (!reading.ok) {
             this._section.addMenuItem(captionItem(explain(reading)));
@@ -176,37 +202,14 @@ function inertItem(styleClass) {
     return new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false, style_class: styleClass});
 }
 
-// Name, plan dimmed beside it, the actions hard right. The plan (or, with no
-// plan, the name) is the one expanding child, so the actions sit at the edge.
-function headerItem(name, plan, actions) {
-    const item = inertItem('ai-usage-header');
-    const row = new St.BoxLayout({style_class: 'ai-usage-header-row', x_expand: true});
-
-    const nameLabel = new St.Label({
-        text: name,
-        style_class: 'ai-usage-provider',
-        y_align: Clutter.ActorAlign.CENTER,
-    });
-    row.add_child(nameLabel);
-
-    if (plan) {
-        const planLabel = new St.Label({
-            text: plan,
-            style_class: 'ai-usage-plan',
-            x_expand: true,
-            x_align: Clutter.ActorAlign.START,
-            y_align: Clutter.ActorAlign.CENTER,
-            opacity: DIM_OPACITY,
-        });
-        row.add_child(planLabel);
-    } else {
-        nameLabel.x_expand = true;
-        nameLabel.x_align = Clutter.ActorAlign.START;
-    }
+// The tabs, and the actions hard right.
+function tabsItem(tabs, actions) {
+    const item = inertItem('ai-usage-tabs-row');
+    const row = new St.BoxLayout({style_class: 'ai-usage-tabs-box', x_expand: true});
+    row.add_child(tabs);
 
     const buttons = new St.BoxLayout({
         style_class: 'ai-usage-action-row',
-        x_align: Clutter.ActorAlign.END,
         y_align: Clutter.ActorAlign.CENTER,
     });
     for (const {label, icon, action} of actions)

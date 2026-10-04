@@ -13,7 +13,6 @@ attaches it to the GitHub release. That zip is what is uploaded. It holds:
 ```
 LICENSE  metadata.json  extension.js  prefs.js  stylesheet.css
 schemas/org.gnome.shell.extensions.ai-usage.gschema.xml
-icons/ai-usage-symbolic.svg
 lib/app.js  lib/http.js  lib/indicator.js  lib/log.js  lib/settings.js  lib/usage.js
 lib/providers/registry.js  lib/providers/common.js
 lib/providers/claude.js  lib/providers/antigravity.js  lib/providers/codex.js
@@ -51,8 +50,8 @@ log). No blockers.
 **`disable()` undoes `enable()`: meets.** `AiUsageApp.disable()`
 (`src/lib/app.js`) removes the poll timer and the debounce source, cancels a
 read in flight, disconnects the extension's, the desktop interface's and each
-provider's settings, destroys every button, cancels the login file monitors
-and aborts the HTTP session. Each pop-up's widgets go with its button.
+provider's settings, destroys the button, cancels the login file monitors
+and aborts the HTTP session. The pop-up's widgets go with the button.
 
 **Imports: meets.** No `ByteArray`, `Lang` or `Mainloop`. The shell side
 imports no `Gdk`, `Gtk` or `Adw`. `prefs.js` reaches only `Adw`, `Gio`,
@@ -91,9 +90,9 @@ XML file; `glib-compile-schemas --strict` passes.
 **Licensing: GPL-2.0-or-later**, `LICENSE` in the zip. No code from other
 extensions.
 
-**Trademarks: names only.** No logo ships: the buttons use stock Adwaita
-symbolic icons, with the extension's own gauge as the fallback. Claude,
-Antigravity and Codex are named to say whose figures a button shows; the
+**Trademarks: names only.** No logo or icon ships: the button reads "AI" and
+the tabs carry the names. Claude, Antigravity and Codex are named to say whose
+figures a tab shows; the
 README's "Credits and trademarks" says so and disclaims affiliation.
 
 **Best practices.** No `try` around `destroy()`, `disconnect()` or
