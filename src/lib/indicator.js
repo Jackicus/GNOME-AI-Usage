@@ -45,8 +45,9 @@ function figureOf(reading, limit) {
 
 export const UsageIndicator = GObject.registerClass(
 class UsageIndicator extends PanelMenu.Button {
-    // select(id) is called with the provider whose tab is chosen.
-    _init(actions, select) {
+    // refresh() is called by the refresh button, select(id) with the provider
+    // whose tab is chosen.
+    _init(refresh, select) {
         super._init(0.5, 'AI usage', false);
 
         // menu.box is the actor that gets `.popup-menu-content`, so the width goes there.
@@ -66,7 +67,7 @@ class UsageIndicator extends PanelMenu.Button {
         this._tabIds = '';
 
         this._tabs = new St.BoxLayout({style_class: 'ai-usage-tabs', x_expand: true});
-        this._tabsItem = tabsItem(this._tabs, actions);
+        this._tabsItem = tabsItem(this._tabs, refresh);
         this._section = new PopupMenu.PopupMenuSection();
         this.menu.addMenuItem(this._tabsItem);
         this.menu.addMenuItem(this._section);
@@ -165,12 +166,12 @@ class UsageIndicator extends PanelMenu.Button {
 // The shell's `icon-button flat`, as at the end of a Quick Settings slider row.
 // Dimmed on the icon rather than the button, so the hover background stays full,
 // and lit again on hover and focus, which the theme does not do for opacity.
-function actionButton(label, iconName, action) {
-    const icon = new St.Icon({icon_name: iconName, opacity: DIM_OPACITY});
+function refreshButton(refresh) {
+    const icon = new St.Icon({icon_name: 'view-refresh-symbolic', opacity: DIM_OPACITY});
     const button = new St.Button({
         style_class: 'icon-button flat',
         can_focus: true,
-        accessible_name: label,
+        accessible_name: 'Refresh now',
         y_align: Clutter.ActorAlign.CENTER,
         child: icon,
     });
@@ -180,7 +181,7 @@ function actionButton(label, iconName, action) {
     button.connect('notify::hover', light);
     button.connect('key-focus-in', light);
     button.connect('key-focus-out', light);
-    button.connect('clicked', () => action());
+    button.connect('clicked', () => refresh());
     return button;
 }
 
@@ -188,19 +189,12 @@ function inertItem(styleClass) {
     return new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false, style_class: styleClass});
 }
 
-// The tabs, and the actions hard right.
-function tabsItem(tabs, actions) {
+// The tabs, and the refresh button hard right.
+function tabsItem(tabs, refresh) {
     const item = inertItem('ai-usage-tabs-row');
     const row = new St.BoxLayout({style_class: 'ai-usage-tabs-box', x_expand: true});
     row.add_child(tabs);
-
-    const buttons = new St.BoxLayout({
-        style_class: 'ai-usage-action-row',
-        y_align: Clutter.ActorAlign.CENTER,
-    });
-    for (const {label, icon, action} of actions)
-        buttons.add_child(actionButton(label, icon, action));
-    row.add_child(buttons);
+    row.add_child(refreshButton(refresh));
 
     item.add_child(row);
     return item;

@@ -9,7 +9,7 @@ Antigravity, Claude's selected: a Max (5x) plan, the 5-hour limit at 12%, resett
 2 hr 21 min; the week across all models at 34% and the week for Opus at 41%, both
 resetting Thu 15:00, each with a bar; "Extra usage · off"
 with 0.00 USD used; and "Where this week went: Claude Code 88% · Chats 12%". The tab row
-ends in a refresh button and an arrow to the preferences.](docs/screenshots/pop-up.png)
+ends in a refresh button.](docs/screenshots/pop-up.png)
 
 ## What it does
 
@@ -100,7 +100,7 @@ To update, `git pull && make install`, then log out and back in. To remove it,
 
 ## Preferences
 
-`gnome-extensions prefs ai-usage@jackicus` opens them, as does the arrow in the pop-up.
+`gnome-extensions prefs ai-usage@jackicus` opens them, as does the Extensions app.
 
 | Button | Readings | Providers |
 | --- | --- | --- |

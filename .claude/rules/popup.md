@@ -9,10 +9,10 @@ paths:
 * The pop-up's rows copy Claude Code's `/usage`: name (the one expanding column),
   dimmed reset, percentage in a fixed `min-width` cell, bar underneath. A tab row
   (top or bottom, `moveMenuItem()` in `setReadings()`) holds the providers as the
-  shell's `button flat`, whose `:checked` look marks the open one, and refresh and
-  preferences as the shell's `icon-button flat` at its right end, dimmed on the
-  icon (not the button, or the hover background dims too) and lit on hover/focus
-  by `actionButton()`. A click on a tab only writes `selected-provider`; everything
+  shell's `button flat`, whose `:checked` look marks the open one, and refresh as
+  the shell's `icon-button flat` at its right end, dimmed on the icon (not the
+  button, or the hover background dims too) and lit on hover/focus by
+  `refreshButton()`. A click on a tab only writes `selected-provider`; everything
   redraws from the setting, so the button and the pop-up cannot disagree. The tabs are rebuilt only when the providers shown change,
   so a redraw does not take the keyboard focus off one.
 * The menu has a fixed `width`, wide enough for Antigravity's longest label, so

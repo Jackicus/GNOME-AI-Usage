@@ -135,14 +135,9 @@ export class AiUsageApp {
     _place() {
         this._indicator?.destroy();
         // Refresh reads every provider and leaves the pop-up open to watch the
-        // figures change; the preferences close it.
-        const indicator = new UsageIndicator([
-            {label: 'Refresh now', icon: 'view-refresh-symbolic', action: () => this.refresh()},
-            {label: 'Preferences', icon: 'go-next-symbolic', action: () => {
-                indicator.menu.close(true);
-                this._extension.openPreferences();
-            }},
-        ], id => this._settings.set_string('selected-provider', id));
+        // figures change.
+        const indicator = new UsageIndicator(() => this.refresh(),
+            id => this._settings.set_string('selected-provider', id));
         indicator.menu.connect('open-state-changed', (_menu, open) => {
             if (open)
                 this._refreshIfStale();
