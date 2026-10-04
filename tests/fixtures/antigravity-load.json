@@ -1,0 +1,11 @@
+{
+  "currentTier": {
+    "id": "free-tier",
+    "name": "Antigravity"
+  },
+  "paidTier": {
+    "id": "g1-pro-tier",
+    "name": "Google AI Pro"
+  },
+  "cloudaicompanionProject": "example-project-0000"
+}

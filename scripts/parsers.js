@@ -15,7 +15,7 @@ import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
 import {applyOptions} from '../src/lib/settings.js';
-import {AntigravityProvider} from '../src/lib/providers/antigravity.js';
+import {AntigravityProvider, planFrom} from '../src/lib/providers/antigravity.js';
 import {parseTimestamp} from '../src/lib/providers/common.js';
 import {ClaudeProvider, planLabel, readAccountTier} from '../src/lib/providers/claude.js';
 import {CodexProvider} from '../src/lib/providers/codex.js';
@@ -291,6 +291,14 @@ print('\n\x1b[1mCodex\x1b[0m — tests/fixtures/codex-usage-free.json  \x1b[2m(f
     check('epoch reset converted', reading.limits[0].resetsAt?.format_iso8601(), '2033-06-04T12:13:20Z');
     check('null additional_rate_limits is no models', reading.limits.filter(l => l.scoped).length, 0);
     check('no credits means no credits row', reading.credits, null);
+}
+
+print('\n\x1b[1mAntigravity\x1b[0m — the plan, from tests/fixtures/antigravity-load.json');
+{
+    const load = fixture('antigravity-load.json');
+    check('a subscription is named by paidTier, not currentTier', planFrom(load), 'Google AI Pro');
+    check('without one, currentTier is humanised', planFrom({currentTier: load.currentTier}), 'Free tier');
+    check('with neither, there is no plan', planFrom({}), null);
 }
 
 print('\n\x1b[1mAntigravity\x1b[0m — tests/fixtures/antigravity-quota.json  \x1b[2m(real, plus a synthetic 5h bucket)\x1b[0m');

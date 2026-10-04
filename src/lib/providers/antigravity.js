@@ -80,7 +80,7 @@ export const AntigravityProvider = {
 
         const body = await http.postJson(LOAD_URL, headers, {metadata: {ideType: 'ANTIGRAVITY'}}, cancellable);
         this._projectId = stringOrNull(body?.cloudaicompanionProject);
-        this._plan = tierLabel(body?.currentTier);
+        this._plan = planFrom(body);
         return this._projectId;
     },
 
@@ -151,10 +151,11 @@ function windowRank(id) {
     return 3;
 }
 
-// "free-tier" -> "Free tier"; the tier's displayName is only "Antigravity".
-function tierLabel(tier) {
-    const id = stringOrNull(tier?.id);
-    return id && humanise(id);
+// A subscription is in paidTier ("Google AI Pro"), while currentTier stays
+// "free-tier" and is named only "Antigravity", so its id is humanised.
+export function planFrom(body) {
+    const id = stringOrNull(body?.currentTier?.id);
+    return stringOrNull(body?.paidTier?.name) ?? (id && humanise(id));
 }
 
 // Read fresh every poll and never kept.
