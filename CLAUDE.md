@@ -68,8 +68,8 @@ log on (`lib/log.js`'s `setVerbose`) and names its stage after a checksum of
 * **One button, `AI` and a percentage**, while a provider is live (`enabled` and
   its CLI on `PATH`); the percentage is the selected tab's figure, picked by
   `primary-limit`, and tints the label by its severity. `show-percent` off leaves
-  `AI`. No icon ships: the providers' marks need their owners' written permission
-  (README, Credits and trademarks), so the tabs carry the names.
+  `AI`. **No provider logo or icon is used, and none will be** (README, Credits and
+  trademarks): the tabs carry the names.
 * **The pop-up has a tab per live provider**, at the top or, by `tab-position`,
   the bottom, with refresh at the end of the tab row. A click on a tab writes
   `selected-provider`, which the next redraw reads back: the pop-up opens on that
