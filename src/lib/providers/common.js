@@ -10,6 +10,7 @@ export function reading(provider, fields) {
     return new Reading({
         providerId: provider.id,
         displayName: provider.displayName,
+        cli: provider.cliName,
         ...fields,
     });
 }
@@ -44,12 +45,11 @@ export function parseTimestamp(value) {
 }
 
 // A cancelled request is thrown on: the app drops that round.
-export function failureReading(provider, e, plan = null) {
+export function failureReading(provider, e, plan) {
     if (e instanceof Gio.IOErrorEnum)
         throw e;
     // Duck-typed, not HttpError: importing http.js would put Soup in prefs' graph.
-    const status = Number.isFinite(e.status) ? e.status : 0;
-    const expired = status === 401 || status === 403;
+    const expired = e.status === 401 || e.status === 403;
     return reading(provider, {
         status: expired ? Status.EXPIRED : Status.UNAVAILABLE,
         plan,
@@ -57,11 +57,23 @@ export function failureReading(provider, e, plan = null) {
     });
 }
 
-export function unknownShapeReading(provider, e, plan = null) {
-    Log.warn(`Could not read ${provider.displayName}'s usage response: ${e.message}`);
-    return reading(provider, {
-        status: Status.UNAVAILABLE,
-        plan,
-        message: 'The service answered in a shape this version does not know.',
-    });
+// A failed request and a response in an unknown shape are different readings.
+export async function fetchReading(provider, plan, request, parse) {
+    let body;
+    try {
+        body = await request();
+    } catch (e) {
+        return failureReading(provider, e, plan);
+    }
+
+    try {
+        return parse(body);
+    } catch (e) {
+        Log.warn(`Could not read ${provider.displayName}'s usage response: ${e.message}`);
+        return reading(provider, {
+            status: Status.UNAVAILABLE,
+            plan,
+            message: 'The service answered in a shape this version does not know.',
+        });
+    }
 }

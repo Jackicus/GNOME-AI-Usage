@@ -178,7 +178,6 @@ export class AiUsageApp {
                 return;
 
             entry.reading = reading;
-            reading.cli = entry.provider.cliName;
             if (reading.ok)
                 entry.renewed = false;
             else if (reading.status === Status.EXPIRED)

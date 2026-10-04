@@ -1,20 +1,18 @@
-// The endpoint is the one Codex's own /status reads. Verified against a live
-// free-plan account with codex-cli 0.160.0 on 2026-10-02.
+// The endpoint is the one Codex's own /status reads.
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
 import {Limit, Status, numberOrNull, stringOrNull} from '../usage.js';
 import * as Log from '../log.js';
-import {failureReading, humanise, readJson, reading, unknownShapeReading} from './common.js';
+import {fetchReading, humanise, readJson, reading} from './common.js';
 
 const USAGE_URL = 'https://chatgpt.com/backend-api/wham/usage';
 
 const USER_AGENT = 'codex_cli_rs';
 
-// The response does not name its windows, so they are known by their length,
-// within a tolerance. The shared ids let primary-limit find them here too.
-// The free plan has the 30-day window alone.
+// The response does not name its windows, so they are told apart by length. The
+// shared ids let primary-limit find them.
 const KNOWN_WINDOWS = [
     {seconds: 5 * 60 * 60, tolerance: 60 * 60, id: 'session', label: 'Current session'},
     {seconds: 7 * 24 * 60 * 60, tolerance: 12 * 60 * 60, id: 'weekly_all', label: 'This week'},
@@ -29,20 +27,21 @@ export const CodexProvider = {
     renewArgs: ['doctor'],
 
     capabilities: {
-        perModel: true,     // additional_rate_limits[], one per metered model
-        breakdown: false,   // the response says nothing about where usage went
-        credits: true,      // credits{}
+        perModel: true,
+        breakdown: false,
+        credits: true,
     },
 
     credentialsFile() {
-        return Gio.File.new_for_path(GLib.build_filenamev([codexHome(), 'auth.json']));
+        // As the CLI does: CODEX_HOME when set and non-empty.
+        const home = GLib.getenv('CODEX_HOME') || GLib.build_filenamev([GLib.get_home_dir(), '.codex']);
+        return Gio.File.new_for_path(GLib.build_filenamev([home, 'auth.json']));
     },
 
     async read(http, cancellable = null) {
         const auth = await readCredentials();
-        if (!auth) {
+        if (!auth)
             return reading(this, {status: Status.SIGNED_OUT});
-        }
 
         if (!auth.accessToken) {
             return reading(this, {
@@ -58,23 +57,12 @@ export const CodexProvider = {
         const headers = {
             'Authorization': `Bearer ${auth.accessToken}`,
             'User-Agent': USER_AGENT,
-            'Accept': 'application/json',
         };
         if (auth.accountId)
             headers['ChatGPT-Account-ID'] = auth.accountId;
 
-        let body;
-        try {
-            body = await http.getJson(USAGE_URL, headers, cancellable);
-        } catch (e) {
-            return failureReading(this, e, auth.plan);
-        }
-
-        try {
-            return this._parse(body, auth);
-        } catch (e) {
-            return unknownShapeReading(this, e, auth.plan);
-        }
+        return fetchReading(this, auth.plan, () => http.getJson(USAGE_URL, headers, cancellable),
+            body => this._parse(body, auth));
     },
 
     _parse(body, auth) {
@@ -113,8 +101,8 @@ function pushWindow(limits, window, {fallbackId, scoped = false, modelName = nul
     if (percent === null)
         return;
 
-    const seconds = numberOrNull(window?.limit_window_seconds);
-    const known = KNOWN_WINDOWS.find(w => seconds !== null && Math.abs(seconds - w.seconds) < w.tolerance);
+    const seconds = numberOrNull(window.limit_window_seconds);
+    const known = KNOWN_WINDOWS.find(w => Math.abs(seconds - w.seconds) < w.tolerance);
     const base = known?.label ?? windowLabel(seconds);
     limits.push(new Limit({
         id: !scoped && known ? known.id : fallbackId,
@@ -135,7 +123,7 @@ function windowLabel(seconds) {
 // Absolute reset only: one derived from reset_after_seconds drifts per poll and
 // would notify again every time.
 function resetTime(window) {
-    const at = numberOrNull(window?.reset_at);
+    const at = numberOrNull(window.reset_at);
     if (at === null || at <= 0)
         return null;
     return GLib.DateTime.new_from_unix_utc(at);
@@ -163,14 +151,6 @@ function planLabel(planType) {
     return stringOrNull(planType) && planType !== 'unknown' ? humanise(planType) : null;
 }
 
-// As the CLI does: CODEX_HOME when set and non-empty.
-function codexHome() {
-    const home = GLib.getenv('CODEX_HOME');
-    if (home)
-        return home;
-    return GLib.build_filenamev([GLib.get_home_dir(), '.codex']);
-}
-
 // Read fresh every poll and never kept. A login kept in the keyring reads as signed out.
 async function readCredentials() {
     const parsed = await readJson(CodexProvider.credentialsFile(), 'Codex credentials');
@@ -188,7 +168,8 @@ async function readCredentials() {
         accessToken,
         accountId: stringOrNull(tokens.account_id) ?? authClaims?.chatgpt_account_id ?? null,
         plan: planLabel(authClaims?.chatgpt_plan_type),
-        expired: isExpired(claims),
+        // No readable expiry: the request decides.
+        expired: Number(claims?.exp) * 1000 <= Date.now(),
     };
 }
 
@@ -206,9 +187,3 @@ function jwtClaims(token) {
     }
 }
 
-function isExpired(claims) {
-    const exp = Number(claims?.exp);
-    if (!Number.isFinite(exp))
-        return false;   // unknown expiry: the request decides
-    return exp * 1000 <= Date.now();
-}

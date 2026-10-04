@@ -5,7 +5,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
 import {Limit, Status, numberOrNull, stringOrNull} from '../usage.js';
-import {failureReading, humanise, parseTimestamp, readJson, reading, unknownShapeReading} from './common.js';
+import {fetchReading, humanise, parseTimestamp, readJson, reading} from './common.js';
 
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage';
 
@@ -19,7 +19,7 @@ const KIND_ORDER = ['session', 'weekly_all', 'weekly_scoped'];
 const KIND_LABELS = {
     session: '5-hour limit',
     weekly_all: 'Weekly · all models',
-    weekly_scoped: 'Weekly',   // qualified by the model it is scoped to
+    weekly_scoped: 'Weekly',
 };
 
 export const ClaudeProvider = {
@@ -27,13 +27,12 @@ export const ClaudeProvider = {
     displayName: 'Claude',
     cli: 'claude',
     cliName: 'Claude Code',
-    // Run to refresh an expired login: Claude Code renews its own as it starts.
     renewArgs: ['doctor'],
 
     capabilities: {
-        perModel: true,     // weekly_scoped rows, one per model
-        breakdown: true,    // seven_day_breakdown
-        credits: true,      // extra_usage / spend
+        perModel: true,
+        breakdown: true,
+        credits: true,
     },
 
     credentialsFile() {
@@ -43,33 +42,17 @@ export const ClaudeProvider = {
 
     async read(http, cancellable = null) {
         const auth = await readCredentials();
-        if (!auth) {
+        if (!auth)
             return reading(this, {status: Status.SIGNED_OUT});
-        }
 
-        let body;
-        try {
-            body = await http.getJson(USAGE_URL, {
-                'Authorization': `Bearer ${auth.accessToken}`,
-                'anthropic-beta': OAUTH_BETA,
-                'Accept': 'application/json',
-            }, cancellable);
-        } catch (e) {
-            return failureReading(this, e, planLabel(auth));
-        }
-
-        try {
-            return this._parse(body, auth);
-        } catch (e) {
-            return unknownShapeReading(this, e, planLabel(auth));
-        }
+        const headers = {'Authorization': `Bearer ${auth.accessToken}`, 'anthropic-beta': OAUTH_BETA};
+        return fetchReading(this, planLabel(auth), () => http.getJson(USAGE_URL, headers, cancellable),
+            body => this._parse(body, auth));
     },
 
     _parse(body, auth) {
-        const rows = Array.isArray(body?.limits) ? body.limits : null;
-        const limits = rows?.length
-            ? rows.map(limitFromRow).filter(l => l)
-            : limitsFromWindows(body);
+        const rows = Array.isArray(body?.limits) ? body.limits : [];
+        const limits = rows.length ? rows.map(limitFromRow).filter(Boolean) : limitsFromWindows(body);
 
         if (!limits.length)
             throw new Error('no limits in the response');
@@ -149,9 +132,10 @@ function creditsFrom(body) {
     if (!extra || typeof extra !== 'object')
         return null;
 
+    const spent = money(body?.spend?.used);
+
     // Switched off, the service sends no figure: a row with no bar (percent null).
     if (!extra.is_enabled) {
-        const spent = money(body?.spend?.used);
         return {
             percent: null,
             label: 'Extra usage · off',
@@ -164,7 +148,6 @@ function creditsFrom(body) {
     if (percent === null)
         return null;
 
-    const spent = money(body?.spend?.used);
     return {
         percent,
         severity: body?.spend?.severity,
@@ -176,8 +159,8 @@ function money(amount) {
     const minor = Number(amount?.amount_minor);
     if (!Number.isFinite(minor))
         return null;
-    const exponent = Number.isFinite(Number(amount?.exponent)) ? Number(amount.exponent) : 2;
-    const value = minor / Math.pow(10, exponent);
+    const exponent = numberOrNull(amount?.exponent) ?? 2;
+    const value = minor / 10 ** exponent;
     const currency = stringOrNull(amount?.currency) ?? '';
     return `${value.toFixed(exponent)} ${currency}`.trim();
 }
@@ -195,8 +178,8 @@ async function readCredentials() {
         return null;
     return {
         accessToken,
-        subscriptionType: oauth.subscriptionType ?? null,
-        rateLimitTier: oauth.rateLimitTier ?? null,
+        subscriptionType: oauth.subscriptionType,
+        rateLimitTier: oauth.rateLimitTier,
         accountTier: await readAccountTier(Gio.File.new_for_path(GLib.build_filenamev([GLib.get_home_dir(), '.claude.json']))),
     };
 }
@@ -210,10 +193,10 @@ export async function readAccountTier(file) {
 
 // "default_claude_max_5x" -> "Max (5x)", as Claude Code writes it.
 export function planLabel(auth) {
-    const tier = stringOrNull(auth?.accountTier) ?? stringOrNull(auth?.rateLimitTier);
+    const tier = auth.accountTier ?? stringOrNull(auth.rateLimitTier);
     const plan = tier && humanise(tier.replace(/^default_claude_/, '')).replace(/ (\d+x)$/, ' ($1)');
     if (plan)
         return plan;
-    const type = stringOrNull(auth?.subscriptionType);
+    const type = stringOrNull(auth.subscriptionType);
     return type && humanise(type);
 }

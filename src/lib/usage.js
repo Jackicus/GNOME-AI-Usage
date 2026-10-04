@@ -28,16 +28,16 @@ export class Limit {
 
 // What one provider knows right now: figures, or why there are none.
 export class Reading {
-    constructor({providerId, displayName, status, plan = null, limits = [], breakdown = [], credits = null, message = null, cli = null}) {
+    constructor({providerId, displayName, status, plan = null, limits = [], breakdown = [], credits = null, message = null, cli}) {
         this.providerId = providerId;
         this.displayName = displayName;
-        this.cli = cli;             // the tool to name when telling the user to sign in
+        this.cli = cli;
         this.status = status;
         this.plan = plan;
         this.limits = limits;
         this.breakdown = breakdown; // [{label, percent}] -- where the week went
         this.credits = credits;     // {percent, label, detail?}; percent null when switched off
-        this.message = message;     // the provider's own words, when it has some
+        this.message = message;
         this.at = GLib.DateTime.new_now_utc();
     }
 
@@ -65,13 +65,14 @@ export function stringOrNull(value) {
     return typeof value === 'string' && value ? value : null;
 }
 
+const SEVERITY_RANK = {[Severity.NORMAL]: 0, [Severity.WARNING]: 1, [Severity.CRITICAL]: 2};
+
 // The worse of the service's own severity and the user's thresholds.
 export function severityFor(percent, {warn, critical}, reported = Severity.NORMAL) {
     const byPercent = percent >= critical
         ? Severity.CRITICAL
         : percent >= warn ? Severity.WARNING : Severity.NORMAL;
-    const rank = {[Severity.NORMAL]: 0, [Severity.WARNING]: 1, [Severity.CRITICAL]: 2};
-    return (rank[reported] ?? 0) > rank[byPercent] ? reported : byPercent;
+    return (SEVERITY_RANK[reported] ?? 0) > SEVERITY_RANK[byPercent] ? reported : byPercent;
 }
 
 export const ResetFormat = {
@@ -121,7 +122,8 @@ function howLong(minutes) {
     if (hours < 24)
         return rest ? `${hours} hr ${rest} min` : `${hours} hr`;
 
-    return plural(Math.round(hours / 24), 'day');
+    const days = Math.round(hours / 24);
+    return `${days} day${days === 1 ? '' : 's'}`;
 }
 
 // "Tue 3:00 PM", "3:00 PM" when the reset is later today, and the date as well
@@ -139,10 +141,6 @@ function wallClockAt(resetsAt, now, clock, timezone) {
         return time;
     const thisWeek = local.format('%Y%j') <= here.add_days(6).format('%Y%j');
     return `${local.format(thisWeek ? '%a' : '%a %-d %b')} ${time}`;
-}
-
-function plural(n, unit) {
-    return `${n} ${unit}${n === 1 ? '' : 's'}`;
 }
 
 export function formatPercent(percent) {

@@ -1,6 +1,5 @@
 // agy keeps its login in the keyring; the token file is only written without a
-// D-Bus session and is stale on a desktop, so it is the fallback. Not
-// `agy -p /usage`: that takes about eleven seconds and starts the MCP servers.
+// D-Bus session and is stale on a desktop, so it is the fallback.
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
@@ -38,13 +37,9 @@ export const AntigravityProvider = {
     },
 
     async read(http, cancellable = null) {
-        let auth;
-        try {
-            auth = await readCredentials(cancellable);
-        } catch (e) {
-            Log.debug(`Could not read Antigravity's login: ${e.message}`);
-            auth = null;
-        }
+        // Read fresh every poll and never kept.
+        const auth = await lookupKeyring(cancellable) ??
+            tokenFrom(await readJson(this.credentialsFile(), 'Antigravity token file'));
 
         if (!auth)
             return reading(this, {status: Status.SIGNED_OUT, plan: this._plan});
@@ -54,7 +49,6 @@ export const AntigravityProvider = {
         const headers = {
             'Authorization': `Bearer ${auth.accessToken}`,
             'User-Agent': USER_AGENT,
-            'Accept': 'application/json',
         };
 
         try {
@@ -111,20 +105,15 @@ function limitFromBucket(group, bucket) {
     if (remaining === null)
         return null;
 
-    const percent = (1 - Math.max(0, Math.min(1, remaining))) * 100;
+    const window = windowLabel(bucket?.window);
+    const family = stringOrNull(group?.displayName);
     return new Limit({
-        id: typeof bucket?.bucketId === 'string' ? bucket.bucketId : 'quota',
+        id: stringOrNull(bucket?.bucketId) ?? 'quota',
         // Not the bucket's displayName, "Weekly Limit Remaining", over a used figure.
-        label: bucketLabel(group, bucket),
-        percent,
+        label: family ? `${window} · ${family}` : window,
+        percent: (1 - remaining) * 100,
         resetsAt: parseTimestamp(bucket?.resetTime),
     });
-}
-
-function bucketLabel(group, bucket) {
-    const window = windowLabel(bucket?.window);
-    const family = typeof group?.displayName === 'string' ? group.displayName : null;
-    return family ? `${window} · ${family}` : window;
 }
 
 function windowLabel(window) {
@@ -158,12 +147,6 @@ export function planFrom(body) {
     return stringOrNull(body?.paidTier?.name) ?? (id && humanise(id));
 }
 
-// Read fresh every poll and never kept.
-async function readCredentials(cancellable) {
-    return await lookupKeyring(cancellable) ??
-        tokenFrom(await readJson(AntigravityProvider.credentialsFile(), 'Antigravity token file'));
-}
-
 function lookupKeyring(cancellable) {
     return new Promise(resolve => {
         // go-keyring's item: the generic schema, matched on its attributes only.
@@ -193,6 +176,6 @@ function tokenFrom(parsed) {
     return {
         accessToken,
         // No expiry: the request decides.
-        expired: expiry ? expiry.to_unix() * 1000 <= Date.now() : false,
+        expired: !!expiry && expiry.to_unix() * 1000 <= Date.now(),
     };
 }
