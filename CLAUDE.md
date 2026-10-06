@@ -131,9 +131,7 @@ None.
     Shell, Soup or `resource:///org/gnome/shell/`, then loads the shared modules.
 
   CI adds `libsecret` (`.github/ci-packages`): `antigravity.js` imports
-  `gi://Secret`, and the imports and parsers checks load it. It ends with `size`:
-  src/ JavaScript against `EXT_BUDGET_LINES` (1800: the size after the simplify
-  pass of 2026-10-04, 1756 lines, rounded up to the next hundred).
+  `gi://Secret`, and the imports and parsers checks load it. It ends with `size`.
 * `make providers` — the real provider modules under plain `gjs`, printing what
   each tab would show. Tells a data problem from a drawing problem. It reads
   the real stored logins and goes to the network: ask first.
