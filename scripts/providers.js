@@ -19,7 +19,7 @@ const THRESHOLDS = {warn: 80, critical: 95};
 
 const EXPLANATION = {
     [Status.SIGNED_OUT]: 'no stored login found -- sign in with its command-line tool',
-    [Status.EXPIRED]: 'the stored login was rejected -- run its command-line tool once to refresh it',
+    [Status.EXPIRED]: 'the stored login has lapsed -- run its command-line tool once to refresh it',
     [Status.UNSUPPORTED]: 'signed in, but this login has no subscription limits',
     [Status.UNAVAILABLE]: 'the figures could not be read',
 };
@@ -40,13 +40,16 @@ async function report(http, provider) {
     print(`  cli:      ${path}`);
 
     const reading = applyOptions(await provider.read(http), EVERYTHING, THRESHOLDS);
-    print(`  plan:     ${reading.plan ?? '(unknown)'}`);
+    if (reading.plan)
+        print(`  plan:     ${reading.plan}`);
 
     if (!reading.ok) {
         const why = EXPLANATION[reading.status] ?? reading.status;
         print(`  status:   ${reading.status} -- ${why}`);
         if (reading.message)
             print(`            ${reading.message}`);
+        if (reading.expiredAt)
+            print(`            expired at ${reading.expiredAt.to_local().format('%F %T')}`);
         print('');
         return;
     }

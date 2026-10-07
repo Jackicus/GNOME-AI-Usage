@@ -82,7 +82,7 @@ log on (`lib/log.js`'s `setVerbose`) and names its stage after a checksum of
   releases the role, so `_place()` builds a new one to move it.
 * **Reading is lazy.** A timer (`poll-seconds`) is the fallback, skipped when
   the session has been idle for 10 minutes. The real triggers are the stored
-  login changing on disk (file monitor, 2 s debounce) and opening a pop-up —
+  login changing on disk (file monitor, 2 s debounce) or in the secret service and opening a pop-up —
   which re-reads only if the figures are over a minute old. The refresh button
   always reads, every provider.
 * Notifications fire once per limit per window, keyed by reset time (rounded to

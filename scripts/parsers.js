@@ -5,11 +5,11 @@ import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
 import {applyOptions} from '../src/lib/settings.js';
-import {AntigravityProvider, planFrom} from '../src/lib/providers/antigravity.js';
+import {AntigravityProvider, planFrom, tokenFrom} from '../src/lib/providers/antigravity.js';
 import {parseTimestamp} from '../src/lib/providers/common.js';
 import {ClaudeProvider, planLabel, readAccountTier} from '../src/lib/providers/claude.js';
 import {CodexProvider} from '../src/lib/providers/codex.js';
-import {ResetFormat, Status, formatBreakdown, formatPercent, formatReset} from '../src/lib/usage.js';
+import {ResetFormat, Status, formatBreakdown, formatPercent, formatReset, formatTime} from '../src/lib/usage.js';
 
 const THRESHOLDS = {warn: 80, critical: 95};
 const EVERYTHING = {showPerModel: true, showBreakdown: true, showCredits: true};
@@ -196,6 +196,12 @@ print('\n\x1b[1mReset times\x1b[0m — the four reset-format values, against a f
         say(at('2026-09-30T15:59:00+00:00'), ResetFormat.RELATIVE), 'Resets in 2 hr');
     check('a reset already past', say(at('2026-09-30T13:00:00+00:00'), ResetFormat.AUTO), 'Resets now');
     check('an open-ended limit has no sentence', formatReset(null), null);
+
+    // When a login lapsed: a moment already past.
+    const time = text => formatTime(at(text), {now, clock: '24h', timezone: utc});
+    check('a lapse earlier today is a time', time('2026-09-30T12:09:00+00:00'), '12:09');
+    check('a lapse this week names the day', time('2026-09-28T19:09:00+00:00'), 'Mon 19:09');
+    check('a lapse longer ago has its date', time('2026-09-20T19:09:00+00:00'), 'Sun 20 Sep 19:09');
 }
 
 // The breakdown line sits under a limit row, so it must not read as another one: a single
@@ -256,6 +262,18 @@ print('\n\x1b[1mAntigravity\x1b[0m — the plan, from tests/fixtures/antigravity
     check('a subscription is named by paidTier, not currentTier', planFrom(load), 'Google AI Pro');
     check('without one, currentTier is humanised', planFrom({currentTier: load.currentTier}), 'Free tier');
     check('with neither, there is no plan', planFrom({}), null);
+}
+
+// agy's stored token, as its keyring item holds it: Go writes the expiry with nanoseconds.
+print('\n\x1b[1mAntigravity\x1b[0m — the stored token and its expiry');
+{
+    const token = tokenFrom({token: {access_token: 'stand-in', expiry: '2026-10-06T19:09:02.310434144+01:00'}});
+    check('the access token is read', token.accessToken, 'stand-in');
+    check('its expiry, nanoseconds and offset', token.expiresAt?.to_unix(),
+        GLib.DateTime.new_from_iso8601('2026-10-06T18:09:02Z', null).to_unix());
+    check('no expiry leaves it to the request', tokenFrom({token: {access_token: 'stand-in'}}).expiresAt, null);
+    check('an unreadable expiry too', tokenFrom({token: {access_token: 'stand-in', expiry: 'soon'}}).expiresAt, null);
+    check('no access token is no login', tokenFrom({token: {refresh_token: 'stand-in'}}), null);
 }
 
 print('\n\x1b[1mAntigravity\x1b[0m — tests/fixtures/antigravity-quota.json  \x1b[2m(real, plus a synthetic 5h bucket)\x1b[0m');

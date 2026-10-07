@@ -37,6 +37,7 @@ export class AiUsageApp {
         this._debounceId = 0;
         this._cancellable = null;
         this._monitors = [];
+        this._keyringId = 0;
     }
 
     enable() {
@@ -263,12 +264,21 @@ export class AiUsageApp {
             monitor.connect('changed', () => this._refreshSoon());
             this._monitors.push(monitor);
         }
+        // An item written again is announced as created.
+        if (this._live().some(e => e.provider.keyring)) {
+            this._keyringId = Gio.DBus.session.signal_subscribe('org.freedesktop.secrets',
+                'org.freedesktop.Secret.Collection', null, null, null, Gio.DBusSignalFlags.NONE,
+                () => this._refreshSoon());
+        }
     }
 
     _stopWatchingCredentials() {
         for (const monitor of this._monitors)
             monitor.cancel();
         this._monitors = [];
+        if (this._keyringId)
+            Gio.DBus.session.signal_unsubscribe(this._keyringId);
+        this._keyringId = 0;
     }
 
     // A credential write arrives as several events, and a read mid-write gets half a file.
