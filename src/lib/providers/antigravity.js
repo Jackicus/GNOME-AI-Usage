@@ -22,6 +22,8 @@ export const AntigravityProvider = {
     displayName: 'Antigravity',
     cli: 'agy',
     cliName: 'the Antigravity CLI (agy)',
+    // Its login is in the secret service, whose changes the app watches.
+    keyring: true,
 
     capabilities: {
         // Its buckets per model family are the account's only limits.
@@ -43,8 +45,9 @@ export const AntigravityProvider = {
 
         if (!auth)
             return reading(this, {status: Status.SIGNED_OUT, plan: this._plan});
-        if (auth.expired)
-            return reading(this, {status: Status.EXPIRED, plan: this._plan});
+        // agy writes a token that lasts an hour as it starts, and nothing renews it after.
+        if (auth.expiresAt && auth.expiresAt.to_unix() * 1000 <= Date.now())
+            return reading(this, {status: Status.EXPIRED, plan: this._plan, expiredAt: auth.expiresAt});
 
         const headers = {
             'Authorization': `Bearer ${auth.accessToken}`,
@@ -167,15 +170,11 @@ function lookupKeyring(cancellable) {
     });
 }
 
-function tokenFrom(parsed) {
+export function tokenFrom(parsed) {
     const accessToken = stringOrNull(parsed?.token?.access_token);
     if (!accessToken)
         return null;
 
-    const expiry = GLib.DateTime.new_from_iso8601(parsed.token.expiry ?? '', null);
-    return {
-        accessToken,
-        // No expiry: the request decides.
-        expired: !!expiry && expiry.to_unix() * 1000 <= Date.now(),
-    };
+    // No expiry: the request decides.
+    return {accessToken, expiresAt: GLib.DateTime.new_from_iso8601(parsed.token.expiry ?? '', null)};
 }

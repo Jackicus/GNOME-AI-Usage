@@ -3,7 +3,7 @@ import GLib from 'gi://GLib';
 export const Status = {
     OK: 'ok',
     SIGNED_OUT: 'signed-out',  // installed, but no stored login was found
-    EXPIRED: 'expired',        // a login was found, but the service rejected it
+    EXPIRED: 'expired',        // a login was found, but it has lapsed or the service rejected it
     UNAVAILABLE: 'unavailable', // the request failed, or came back unreadable
     UNSUPPORTED: 'unsupported', // signed in, but this login has no limits to show
 };
@@ -27,7 +27,8 @@ export class Limit {
 
 // What one provider knows right now: figures, or why there are none.
 export class Reading {
-    constructor({providerId, displayName, status, plan = null, limits = [], breakdown = [], credits = null, message = null, cli}) {
+    constructor({providerId, displayName, status, plan = null, limits = [], breakdown = [], credits = null,
+        message = null, expiredAt = null, cli}) {
         this.providerId = providerId;
         this.displayName = displayName;
         this.cli = cli;
@@ -37,6 +38,7 @@ export class Reading {
         this.breakdown = breakdown; // [{label, percent}] -- where the week went
         this.credits = credits;     // {percent, label, detail?}; percent null when switched off
         this.message = message;
+        this.expiredAt = expiredAt; // GLib.DateTime, when a login is known to have lapsed
         this.at = GLib.DateTime.new_now_utc();
     }
 
@@ -125,8 +127,13 @@ function howLong(minutes) {
     return `${days} day${days === 1 ? '' : 's'}`;
 }
 
+// "19:09", or "Tue 19:09" on another day, for a moment already past.
+export function formatTime(at, {now = null, clock = null, timezone = null} = {}) {
+    return wallClockAt(at, now ?? GLib.DateTime.new_now_utc(), clock, timezone);
+}
+
 // "Tue 3:00 PM", "3:00 PM" when the reset is later today, and the date as well
-// past the next six days, where a day name alone would read as this week's.
+// more than six days either way, where a day name alone would read as this week's.
 function wallClockAt(resetsAt, now, clock, timezone) {
     const local = timezone ? resetsAt.to_timezone(timezone) : resetsAt.to_local();
     const here = timezone ? now.to_timezone(timezone) : now.to_local();
@@ -138,7 +145,8 @@ function wallClockAt(resetsAt, now, clock, timezone) {
         local.get_day_of_year() === here.get_day_of_year();
     if (today)
         return time;
-    const thisWeek = local.format('%Y%j') <= here.add_days(6).format('%Y%j');
+    const day = local.format('%Y%j');
+    const thisWeek = day <= here.add_days(6).format('%Y%j') && day >= here.add_days(-6).format('%Y%j');
     return `${local.format(thisWeek ? '%a' : '%a %-d %b')} ${time}`;
 }
 

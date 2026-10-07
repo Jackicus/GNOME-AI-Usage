@@ -50,9 +50,8 @@ export const CodexProvider = {
             });
         }
 
-        if (auth.expired) {
-            return reading(this, {status: Status.EXPIRED});
-        }
+        if (auth.expiresAt && auth.expiresAt.to_unix() * 1000 <= Date.now())
+            return reading(this, {status: Status.EXPIRED, expiredAt: auth.expiresAt});
 
         const headers = {
             'Authorization': `Bearer ${auth.accessToken}`,
@@ -169,7 +168,7 @@ async function readCredentials() {
         accountId: stringOrNull(tokens.account_id) ?? authClaims?.chatgpt_account_id ?? null,
         plan: planLabel(authClaims?.chatgpt_plan_type),
         // No readable expiry: the request decides.
-        expired: Number(claims?.exp) * 1000 <= Date.now(),
+        expiresAt: numberOrNull(claims?.exp) === null ? null : GLib.DateTime.new_from_unix_utc(claims.exp),
     };
 }
 

@@ -7,7 +7,7 @@ import * as BarLevel from 'resource:///org/gnome/shell/ui/barLevel.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-import {Severity, Status, formatBreakdown, formatPercent, formatReset} from './usage.js';
+import {Severity, Status, formatBreakdown, formatPercent, formatReset, formatTime} from './usage.js';
 
 // Secondary text is dimmed with actor opacity, so it suits light and dark menus.
 const DIM_OPACITY = 160;
@@ -15,12 +15,14 @@ const DIM_OPACITY = 160;
 // primary-limit -> the limit id it asks for; anything else shows the worst.
 const PRIMARY_LIMIT = {session: 'session', weekly: 'weekly_all'};
 
-function explain(reading) {
+function explain(reading, clock) {
     switch (reading.status) {
     case Status.SIGNED_OUT:
         return `Not signed in. Run ${reading.cli} and sign in there.`;
-    case Status.EXPIRED:
-        return `The stored login has expired. Run ${reading.cli} once and it will refresh itself.`;
+    case Status.EXPIRED: {
+        const when = reading.expiredAt ? `expired at ${formatTime(reading.expiredAt, {clock})}` : 'has expired';
+        return `The stored login ${when}. Run ${reading.cli} once and it will refresh itself.`;
+    }
     case Status.UNSUPPORTED:
         return reading.message ?? 'This login has no subscription limits to show.';
     default:
@@ -132,7 +134,7 @@ class UsageIndicator extends PanelMenu.Button {
         }
 
         if (!reading.ok) {
-            this._section.addMenuItem(captionItem(explain(reading)));
+            this._section.addMenuItem(captionItem(explain(reading, clock)));
             return;
         }
 

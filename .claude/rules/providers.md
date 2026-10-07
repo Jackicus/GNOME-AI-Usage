@@ -45,6 +45,16 @@ POSTs to `cloudcode-pa.googleapis.com`: `loadCodeAssist` (project id, kept until
 a token is rejected or the extension is disabled: the app reads through a copy
 of each provider made per enable) then `retrieveUserQuotaSummary`.
 
+* **Its access token lasts an hour** (`token.expiry`, written with nanoseconds),
+  and `agy` writes a fresh one only as it starts: an hour after `agy` was last
+  started the stored login has lapsed, and the tab says when. A token past its
+  expiry is reported without a request. The keyring cannot be watched as a file,
+  so the app subscribes to the secret service's `Collection` signals (a rewritten
+  item is announced as `ItemCreated`) and reads again when `agy` writes it.
+* **The token is not refreshed here**, though Google's refresh, unlike
+  Anthropic's, is not known to rotate the refresh token: it needs `agy`'s OAuth
+  client id and secret, which are not ours to ship, and whether it rotates has
+  not been confirmed against the live endpoint (#29).
 * It answers **403** to a User-Agent not starting `antigravity`, which is why
   `Http` sets no session-wide agent and each provider passes its own.
 * **The plan is `paidTier.name`** ("Google AI Pro") in the `loadCodeAssist`
@@ -93,7 +103,8 @@ Re-run that probe before changing a command or after a CLI major version.
    `displayName`, `cli` (looked for on `PATH`) and `cliName` (named in the
    sign-in message), `capabilities` (which of `perModel`, `breakdown`, `credits` it can honour),
    `renewArgs` (optional: the CLI's arguments that make it refresh its own login,
-   below), `credentialsFile()` (watched, so the tool's refresh is read at once) and
+   below), `keyring` (true when it reads the secret service, which the app then
+   watches), `credentialsFile()` (watched, so the tool's refresh is read at once) and
    `read(http, cancellable)`, resolving to a `Reading`, the login read afresh
    each call. Contract: never throw (return a `Reading` with a `Status`; only a
    cancellation, which `failureReading()` throws on, goes up), never write to the
