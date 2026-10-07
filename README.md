@@ -102,16 +102,15 @@ To update, `git pull && make install`, then log out and back in. To remove it,
 
 | Button | Readings | Providers |
 | --- | --- | --- |
-| ![The Button page: the figure the button shows, two switches, where the tabs sit and how reset times are worded.](docs/screenshots/preferences-button.png) | ![The Readings page: 300 seconds between readings, and Notify at 0, which turns notifications off.](docs/screenshots/preferences-readings.png) | ![The Providers page: Claude Code found at /usr/bin/claude, the Codex CLI found at /usr/bin/codex, and the Antigravity CLI (agy) found at /usr/bin/agy, each with a switch.](docs/screenshots/preferences-providers.png) |
+| ![The Button page: where the button sits in the top bar, the figure it shows and two switches, then where the tabs sit and how reset times are worded.](docs/screenshots/preferences-button.png) | ![The Readings page: 300 seconds between readings, then the warnings: amber from 80, red from 95, and notify from 0, which turns notifications off.](docs/screenshots/preferences-readings.png) | ![The Providers page: Claude, Codex and Antigravity, each found at its command's path in /usr/bin and each with a switch.](docs/screenshots/preferences-providers.png) |
 
-- **Button**: the figure the button shows, whether the percentage is shown beside
-  "AI", whether the tabs sit at the top or the bottom of the pop-up, how reset times are
-  worded, which end of the top bar the button sits in and where, and the figures at which
-  it turns amber and red.
-- **Readings**: seconds between readings (60 to 3600), and the figure at which a limit
-  notifies you (0 for never).
-- **Providers**: each provider's switch, where its tool was found, and what its tab
-  lists.
+- **Button**: which part of the top bar the button sits in and where, the figure it
+  shows, whether the percentage is shown beside "AI", whether the tabs sit at the top or
+  the bottom of the pop-up, and how reset times are worded.
+- **Readings**: seconds between readings (60 to 3600), and the warnings: the share of a
+  limit used at which it turns amber, then red, and at which it notifies you (0 for never).
+- **Providers**: each installed provider's switch, where its tool was found, and what its
+  tab lists; a provider whose tool is not installed is listed without a switch.
 
 ## Troubleshooting
 
@@ -141,8 +140,9 @@ stored logins and goes online, just as the extension does.
   only while they run, so use the tool (`claude`, `agy` or `codex`) and it returns. With the
   option off the tab stays, and the button is amber when no provider has a figure.
 - **The button is amber with no figure**: a stored login has expired or is missing.
-  Run the tool once (`claude`, `agy` or `codex`), signing in if it asks; a new Claude or
-  Codex login is picked up within seconds, and any provider's on the next reading or when you open the pop-up.
+  Run the tool once (`claude`, `agy` or `codex`), signing in if it asks; the new login is
+  picked up within seconds. Antigravity's lasts an hour from when `agy` last started, and
+  its tab says when it expired.
 - **No button at all after installing**: log out and back in, then
   `gnome-extensions enable ai-usage@jackicus`.
 
