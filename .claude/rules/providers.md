@@ -64,6 +64,9 @@ of each provider made per enable) then `retrieveUserQuotaSummary`.
 * **The response says what is LEFT**; everything else here shows USED. Its own
   "Weekly Limit Remaining" label would lie over the inverted figure, so labels
   are built from window and model family. A parser check pins 0, 1 and 0.35.
+* **Its bucket ids are the service's** (`gemini-5h`, `gemini-weekly`), which
+  `primary-limit` cannot find, so the first `5h` bucket takes the id `session` and
+  the first `weekly` one `weekly_all`; the rest keep theirs.
 
 ## Codex
 
@@ -122,6 +125,7 @@ Re-run that probe before changing a command or after a CLI major version.
    cancellation, which `failureReading()` throws on, goes up), never write to the
    provider's files, never log in, and pull nothing of St, Clutter or Soup into
    the prefs process — read `e.status` duck-typed, as `failureReading()` does.
-   `make imports` enforces the last.
+   `make imports` enforces the last. The account-wide session and weekly limits
+   take the ids `session` and `weekly_all`, which `primary-limit` looks for.
 3. Register it in `registry.js`; preferences, settings and `make providers`
    follow. Add a fixture under `tests/fixtures/` and checks in `scripts/parsers.js`.

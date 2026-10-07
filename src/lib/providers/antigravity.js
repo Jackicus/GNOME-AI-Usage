@@ -15,6 +15,10 @@ const USER_AGENT = 'antigravity/cli (gnome-shell-extension-ai-usage)';
 
 const KEYRING_ATTRIBUTES = {service: 'gemini', username: 'antigravity'};
 
+// The first bucket of each of these windows takes the id primary-limit asks for,
+// as Claude's and Codex's account-wide windows do.
+const SHARED_IDS = {'5h': 'session', 'weekly': 'weekly_all'};
+
 export const AntigravityProvider = {
     id: 'antigravity',
     displayName: 'Antigravity',
@@ -77,27 +81,28 @@ export const AntigravityProvider = {
 
     _parse(body) {
         const groups = Array.isArray(body?.groups) ? body.groups : [];
-        const limits = [];
+        const buckets = groups.flatMap(group =>
+            (Array.isArray(group?.buckets) ? group.buckets : []).map(bucket => ({group, bucket})));
+        buckets.sort((a, b) => windowRank(a.bucket?.window) - windowRank(b.bucket?.window));
 
-        for (const group of groups) {
-            const buckets = Array.isArray(group?.buckets) ? group.buckets : [];
-            for (const bucket of buckets) {
-                const limit = limitFromBucket(group, bucket);
-                if (limit)
-                    limits.push(limit);
-            }
+        const limits = [];
+        for (const {group, bucket} of buckets) {
+            const shared = SHARED_IDS[bucket?.window];
+            const id = shared && !limits.some(l => l.id === shared) ? shared : null;
+            const limit = limitFromBucket(group, bucket, id);
+            if (limit)
+                limits.push(limit);
         }
 
         if (!limits.length)
             throw new Error('no quota buckets in the response');
 
-        limits.sort((a, b) => windowRank(a.id) - windowRank(b.id));
         return reading(this, {status: Status.OK, plan: this._plan, limits});
     },
 };
 
 // The API reports the fraction LEFT; this shows the share used.
-function limitFromBucket(group, bucket) {
+function limitFromBucket(group, bucket, sharedId) {
     const remaining = numberOrNull(bucket?.remainingFraction);
     if (remaining === null)
         return null;
@@ -105,7 +110,7 @@ function limitFromBucket(group, bucket) {
     const window = windowLabel(bucket?.window);
     const family = stringOrNull(group?.displayName);
     return new Limit({
-        id: stringOrNull(bucket?.bucketId) ?? 'quota',
+        id: sharedId ?? stringOrNull(bucket?.bucketId) ?? 'quota',
         // Not the bucket's displayName, "Weekly Limit Remaining", over a used figure.
         label: family ? `${window} · ${family}` : window,
         percent: (1 - remaining) * 100,
@@ -126,15 +131,9 @@ function windowLabel(window) {
     }
 }
 
-// Shortest window first, by the bucket id, which carries the window.
-function windowRank(id) {
-    if (id.includes('5h'))
-        return 0;
-    if (id.includes('daily'))
-        return 1;
-    if (id.includes('weekly'))
-        return 2;
-    return 3;
+function windowRank(window) {
+    const rank = ['5h', 'daily', 'weekly'].indexOf(window);
+    return rank < 0 ? 3 : rank;
 }
 
 // A subscription is in paidTier ("Google AI Pro"), while currentTier stays

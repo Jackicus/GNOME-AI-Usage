@@ -297,7 +297,10 @@ print('\n\x1b[1mAntigravity\x1b[0m — tests/fixtures/antigravity-quota.json  \x
     check('remainingFraction 0 means fully used', formatPercent(reading.limits[1].percent), '100%');
     check('remainingFraction 1 means untouched', formatPercent(reading.limits[2].percent), '0%');
 
-    check('shortest window sorts first', reading.limits[0].id, 'gemini-5h');
+    // primary-limit finds a limit by these ids; the bucket ids would leave it the worst.
+    check('the first 5h bucket is the session', reading.limits[0].id, 'session');
+    check('the first weekly bucket is weekly_all', reading.limits[1].id, 'weekly_all');
+    check('a later weekly bucket keeps its own id', reading.limits[2].id, '3p-weekly');
     check('5h window labelled', reading.limits[0].label, 'Current session · Gemini Models');
     check('weekly window labelled', reading.limits[1].label, 'This week · Gemini Models');
     check('the other family keeps its own row', reading.limits[2].label, 'This week · Claude and GPT models');
@@ -374,7 +377,7 @@ print('\n\x1b[1mHostile shapes\x1b[0m — a wrong number is worse than no number
         ]}],
     });
     check('antigravity drops a null fraction', anti.limits.length, 1);
-    check('rather than reading it as fully spent', anti.limits.every(l => l.percent !== 100 || l.id === 'gemini-5h'), true);
+    check('rather than reading it as fully spent', anti.limits.every(l => l.percent !== 100 || l.id === 'session'), true);
 
     const codex = CodexProvider._parse({
         plan_type: 'plus',
