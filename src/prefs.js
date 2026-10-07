@@ -23,6 +23,20 @@ export default class AiUsagePreferences extends ExtensionPreferences {
             icon_name: 'preferences-desktop-appearance-symbolic',
         });
 
+        const place = new Adw.PreferencesGroup({
+            title: 'Where it sits',
+            description: 'The button goes in the chosen part of the top bar. Which neighbours it lands '
+                + 'between also depends on what other extensions have put there.',
+        });
+        place.add(comboRow(settings, 'panel-box', 'Part of the top bar', [
+            ['left', 'Left'],
+            ['center', 'Centre'],
+            ['right', 'Right'],
+        ]));
+        place.add(spinRow(settings, 'panel-index', 'Position',
+            'Its place in that part, counted from the left; -1 puts it at the right end.', -1, 20));
+        page.add(place);
+
         const shown = new Adw.PreferencesGroup({
             title: 'What it shows',
             description: 'The pop-up always lists every limit. This is the single figure on the button itself, '
@@ -42,42 +56,22 @@ export default class AiUsagePreferences extends ExtensionPreferences {
 
         const popup = new Adw.PreferencesGroup({
             title: 'The pop-up',
-            description: 'Every limit carries the time it resets. This is how that time is worded, in the pop-ups '
-                + 'and in the notifications alike. An exact time is in your own timezone, on the clock your desktop '
-                + 'is set to.',
+            description: 'Every limit carries the time it resets, worded the same in the pop-up and in '
+                + 'notifications. An exact time is in your own timezone, on the clock your desktop is set to.',
         });
         popup.add(comboRow(settings, 'tab-position', 'Provider tabs', [
             ['top', 'At the top'],
             ['bottom', 'At the bottom'],
         ]));
-        popup.add(comboRow(settings, 'reset-format', 'Reset times', [
-            ['auto', 'Automatic — a countdown when it is close, a time when it is not'],
-            ['relative', 'How long until it resets'],
-            ['absolute', 'The time it resets'],
+        const reset = comboRow(settings, 'reset-format', 'Reset times', [
+            ['auto', 'Automatic'],
+            ['relative', 'Countdown'],
+            ['absolute', 'Time of day'],
             ['both', 'Both'],
-        ]));
+        ]);
+        reset.subtitle = 'Automatic is a countdown when the reset is less than a day away, the time when it is not.';
+        popup.add(reset);
         page.add(popup);
-
-        const place = new Adw.PreferencesGroup({
-            title: 'Where it sits',
-            description: 'The button goes in the chosen end of the top bar. Which neighbours it lands '
-                + 'between also depends on what other extensions have put there.',
-        });
-        place.add(comboRow(settings, 'panel-box', 'Part of the top bar', [
-            ['left', 'Left, by Activities'],
-            ['center', 'Centre, by the clock'],
-            ['right', 'Right, among the status icons'],
-        ]));
-        place.add(spinRow(settings, 'panel-index', 'Position', 'Counting from the middle of the bar; -1 puts it last.', -1, 20));
-        page.add(place);
-
-        const colour = new Adw.PreferencesGroup({
-            title: 'Colour',
-            description: 'A limit past the first figure turns amber, past the second red.',
-        });
-        colour.add(spinRow(settings, 'warn-percent', 'Nearly used up', null, 1, 100));
-        colour.add(spinRow(settings, 'critical-percent', 'Almost gone', null, 1, 100));
-        page.add(colour);
 
         return page;
     }
@@ -96,12 +90,15 @@ export default class AiUsagePreferences extends ExtensionPreferences {
         group.add(spinRow(settings, 'poll-seconds', 'Seconds between readings', null, 60, 3600, 30));
         page.add(group);
 
-        const notify = new Adw.PreferencesGroup({
-            title: 'Notifications',
-            description: 'Crossing the figure notifies you once for that limit, and not again until it resets.',
+        const warnings = new Adw.PreferencesGroup({
+            title: 'Warnings',
+            description: 'How much of a limit is used, in percent, before it is shown in amber, then red, and '
+                + 'before you are notified. A notification comes once for each limit, and not again until it resets.',
         });
-        notify.add(spinRow(settings, 'notify-percent', 'Notify at', 'Zero turns notifications off.', 0, 100));
-        page.add(notify);
+        warnings.add(spinRow(settings, 'warn-percent', 'Amber from', null, 1, 100));
+        warnings.add(spinRow(settings, 'critical-percent', 'Red from', null, 1, 100));
+        warnings.add(spinRow(settings, 'notify-percent', 'Notify from', 'Zero turns notifications off.', 0, 100));
+        page.add(warnings);
 
         return page;
     }
