@@ -116,8 +116,7 @@ export default class AiUsagePreferences extends ExtensionPreferences {
             title: 'Providers',
             description: 'This extension never signs you in and never stores a password. It reads the login that each '
                 + "provider's own command-line tool has already saved, so signing in and out stays in one place. "
-                + 'A provider needs that tool installed and already signed in; one whose tool is missing gets no '
-                + 'tab whatever its switch says.',
+                + 'A provider needs that tool installed and already signed in, and is offered once it is installed.',
         });
 
         for (const provider of PROVIDERS)
@@ -137,23 +136,25 @@ export default class AiUsagePreferences extends ExtensionPreferences {
         return page;
     }
 
+    // A provider whose tool is missing cannot be read, so it is offered no switch.
     _providerRow(provider) {
         const path = GLib.find_program_in_path(provider.cli);
-        const tool = provider.cliName;
+        if (!path) {
+            return new Adw.ActionRow({
+                title: provider.displayName,
+                subtitle: `Not installed: no ${provider.cli} command was found`,
+                use_markup: false,
+            });
+        }
 
         const row = new Adw.ExpanderRow({
             title: provider.displayName,
-            subtitle: path
-                ? `${tool} found at ${path}`
-                : `${tool} is not installed — this provider is left out`,
+            subtitle: `Found at ${path}`,
+            use_markup: false,
         });
-
         const settings = providerSettings(this.dir, provider.id);
 
-        const toggle = new Gtk.Switch({
-            valign: Gtk.Align.CENTER,
-            sensitive: path !== null,
-        });
+        const toggle = new Gtk.Switch({valign: Gtk.Align.CENTER});
         settings.bind('enabled', toggle, 'active', Gio.SettingsBindFlags.DEFAULT);
         row.add_suffix(toggle);
 
