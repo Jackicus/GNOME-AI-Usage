@@ -106,11 +106,21 @@ function codexUsage() {
 }
 
 const ANSWERS = {
-    'https://api.anthropic.com/api/oauth/usage': claudeUsage,
-    'https://chatgpt.com/backend-api/wham/usage': codexUsage,
-    'https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist': antigravityProject,
-    'https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary': antigravityQuota,
+    'https://api.anthropic.com/api/oauth/usage': ['claude', claudeUsage],
+    'https://chatgpt.com/backend-api/wham/usage': ['codex', codexUsage],
+    'https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist': ['antigravity', antigravityProject],
+    'https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary': ['antigravity', antigravityQuota],
 };
+
+// How a provider's service fails, as './scripts/nested.sh state' writes it: {"codex": "expired"}.
+function failureFor(provider) {
+    try {
+        const [, bytes] = GLib.file_get_contents(GLib.build_filenamev([GLib.get_home_dir(), 'stand-in-failures.json']));
+        return JSON.parse(new TextDecoder().decode(bytes))[provider] ?? null;
+    } catch {
+        return null;
+    }
+}
 
 export class Http {
     getJson(url) {
@@ -124,10 +134,20 @@ export class Http {
     // A URL with no stand-in answer is the service being unreachable, which is
     // what a provider added without one here would show in a retake.
     _answer(url) {
-        const answer = ANSWERS[url];
-        return answer
-            ? Promise.resolve(answer())
-            : Promise.reject(new HttpError(0, `No stand-in answer for ${url}`));
+        if (!ANSWERS[url])
+            return Promise.reject(new HttpError(0, `No stand-in answer for ${url}`));
+
+        const [provider, answer] = ANSWERS[url];
+        switch (failureFor(provider)) {
+        case 'expired':
+            return Promise.reject(new HttpError(401, 'Unauthorized'));
+        case 'unavailable':
+            return Promise.reject(new HttpError(503, 'the stand-in service is down'));
+        case 'unknown-shape':
+            return Promise.resolve({stand_in: 'a shape no parser knows'});
+        default:
+            return Promise.resolve(answer());
+        }
     }
 
     destroy() {

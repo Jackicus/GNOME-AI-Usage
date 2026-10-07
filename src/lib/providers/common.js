@@ -92,7 +92,7 @@ export async function fetchReading(provider, plan, request, parse) {
         return reading(provider, {
             status: Status.UNAVAILABLE,
             plan,
-            message: 'The service answered in a shape this version does not know.',
+            message: 'the service answered in a shape this version does not know',
         });
     }
 }
