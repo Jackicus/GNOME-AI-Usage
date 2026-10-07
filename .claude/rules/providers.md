@@ -78,6 +78,18 @@ windows of the paid plans are known only from openai/codex's source
 `user_id` and `account_id`, which are never read; `chatpass` and
 `code_review_rate_limit` are not shown.
 
+With `cli_auth_credentials_store` at `keyring` or `auto`, the CLI keeps the same
+JSON in the secret service instead (and deletes `auth.json`): service `Codex Auth`,
+username `cli|` plus the first 16 hex digits of the SHA-256 of the canonical
+`CODEX_HOME` path (openai/codex `login/src/auth/storage.rs`, `compute_store_key`;
+`keyring` 3.6's attributes, `linux-native-async-persistent`). It is looked up only
+when there is no file. The CLI resolves symbolic links in the path and GLib does
+not, so a `CODEX_HOME` reached through a link is missed. A parser check pins the
+derivation; a scratch gnome-keyring on a private bus read the item end to end.
+
+Claude Code (2.1.292) keeps its login on Linux only in `.credentials.json`; the
+keychain is macOS's, so Claude has no keyring to fall back to.
+
 ## Renewing an expired login
 
 `renew-login` runs `timeout 60 <cli> <renewArgs>` once per expiry (reset by the

@@ -40,7 +40,7 @@ zip `make pack` builds. No blockers.
   privileged process or clipboard use.
 - **Other extensions.** None touched.
 - **Network.** For each provider switched on whose CLI is on `PATH`, the login that CLI stored
-  is read (a file, or the system keyring for Antigravity) and sent to that provider's endpoint:
+  is read (a file, or the system keyring for Antigravity and for Codex without its file) and sent to that provider's endpoint:
   `api.anthropic.com`, `cloudcode-pa.googleapis.com`, `chatgpt.com`. Nothing else is sent, no
   token is kept or logged, and no provider file is written. No telemetry.
 - **Schemas.** `org.gnome.shell.extensions.ai-usage` at `/org/gnome/shell/extensions/ai-usage/`
