@@ -17,7 +17,7 @@ most 16, and `session-modes` is absent: a screen lock disables the extension.
 
 ## The review guidelines, checked against this code
 
-Checked on 2026-10-04 against the
+Checked on 2026-10-07 against the
 [Review Guidelines](https://gjs.guide/extensions/review-guidelines/review-guidelines.html) and
 [Best Practices](https://gjs.guide/extensions/review-guidelines/best-practices.html), on the
 zip `make pack` builds. No blockers.
@@ -25,8 +25,8 @@ zip `make pack` builds. No blockers.
 - **Lifecycle.** `extension.js` builds `AiUsageApp` in `enable()`; module scope holds constants
   and the class registration. `disable()` removes the poll timer and the debounce source,
   cancels a read in flight, disconnects the extension's, the desktop interface's and each
-  provider's settings, destroys the button, cancels the login file monitors and aborts the HTTP
-  session.
+  provider's settings, destroys the button, cancels the login file monitors, unsubscribes from
+  the secret service's signals and aborts the HTTP session.
 - **Imports.** No `ByteArray`, `Lang` or `Mainloop`; no `Gdk`, `Gtk` or `Adw` in the shell
   process; `make imports` fails when `prefs.js` reaches St, Clutter, Meta, Shell, Soup or a
   shell `resource:///` module.
@@ -40,9 +40,12 @@ zip `make pack` builds. No blockers.
   privileged process or clipboard use.
 - **Other extensions.** None touched.
 - **Network.** For each provider switched on whose CLI is on `PATH`, the login that CLI stored
-  is read (a file, or the system keyring for Antigravity and for Codex without its file) and sent to that provider's endpoint:
-  `api.anthropic.com`, `cloudcode-pa.googleapis.com`, `chatgpt.com`. Nothing else is sent, no
-  token is kept or logged, and no provider file is written. No telemetry.
+  is read (a file, or the system keyring for Antigravity, and for Codex when it has no file)
+  and sent to that provider's endpoint: `api.anthropic.com`, `cloudcode-pa.googleapis.com`,
+  `chatgpt.com`. Nothing else is sent, no token is kept, logged or refreshed, and no provider
+  file or keyring item is written. The keyring is only read, through libsecret, asynchronously,
+  and its `Collection` signals are watched only to read again when a CLI rewrites its login.
+  No telemetry.
 - **Schemas.** `org.gnome.shell.extensions.ai-usage` at `/org/gnome/shell/extensions/ai-usage/`
   and a relocatable per-provider schema under it, in one XML file;
   `glib-compile-schemas --strict` passes.
