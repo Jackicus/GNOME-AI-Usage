@@ -406,6 +406,120 @@ print('\n\x1b[1mHostile shapes\x1b[0m — a wrong number is worse than no number
     check('an unnamed model bucket keeps a stable id', ids.limits[1].id, 'model:bucket0');
 }
 
+// The parts of Claude's response read only on some accounts.
+print('\n\x1b[1mClaude\x1b[0m — money, unknown kinds and bad times');
+{
+    const spent = ClaudeProvider._parse({
+        limits: [
+            {kind: 'session', percent: 5, resets_at: 'tomorrow-ish'},
+            {kind: 'weekly_opus_extra', percent: 7},
+        ],
+        extra_usage: {is_enabled: true},
+        spend: {percent: 10, used: {amount_minor: 1234, currency: 'EUR', exponent: 2}},
+    }, {});
+    check('minor units in the currency\'s exponent', spent.credits.label, 'Extra usage · 12.34 EUR used');
+    check('an unknown kind is named from itself', spent.limits[1].label, 'Weekly opus extra');
+    check('and listed after the known ones', spent.limits[1].id, 'weekly_opus_extra');
+    check('a reset that is not a time is none', spent.limits[0].resetsAt, null);
+    const yen = ClaudeProvider._parse({
+        limits: [{kind: 'session', percent: 5}],
+        extra_usage: {is_enabled: false},
+        spend: {used: {amount_minor: 500, currency: 'JPY', exponent: 0}},
+    }, {});
+    check('a currency with no minor unit', yen.credits.detail, '500 JPY used');
+}
+
+print('\n\x1b[1mCodex\x1b[0m — the shapes a free or odd account sends');
+{
+    const window = {used_percent: 3, limit_window_seconds: 18000, reset_at: 2000000000};
+    const none = CodexProvider._parse({plan_type: 'free', rate_limit: null, additional_rate_limits: null}, {plan: null});
+    check('a null rate_limit is no limits, not a new shape', none.status, Status.UNSUPPORTED);
+    check('and still names the plan', none.plan, 'Free');
+    check('null and empty additional limits agree',
+        CodexProvider._parse({rate_limit: {primary_window: window}, additional_rate_limits: []}, {}).limits.length,
+        CodexProvider._parse({rate_limit: {primary_window: window}, additional_rate_limits: null}, {}).limits.length);
+    const odd = CodexProvider._parse({
+        plan_type: 'unknown',
+        rate_limit: {primary_window: {...window, limit_window_seconds: null}},
+        additional_rate_limits: [{limit_name: 'no windows'}, {limit_name: 'gpt-x', rate_limit: null}],
+    }, {plan: 'Pro'});
+    check('a model entry with no rate_limit adds no row', odd.limits.length, 1);
+    check('a window of no stated length', odd.limits[0].label, 'Current limit');
+    check('plan_type "unknown" leaves the login\'s plan', odd.plan, 'Pro');
+}
+
+// Codex's login, read the way the extension reads it: auth.json in a scratch CODEX_HOME, a stub for the
+// network, and a session bus that is not there, so the keyring fallback finds nothing.
+print('\n\x1b[1mCodex\x1b[0m — reading its login, with a stub for the network');
+{
+    const home = GLib.dir_make_tmp('ai-usage-codex-XXXXXX');
+    GLib.setenv('CODEX_HOME', home, true);
+    GLib.setenv('DBUS_SESSION_BUS_ADDRESS', `unix:path=${home}/no-bus`, true);
+    const file = Gio.File.new_for_path(GLib.build_filenamev([home, 'auth.json']));
+    const write = auth => file.replace_contents(new TextEncoder().encode(JSON.stringify(auth)), null, false,
+        Gio.FileCreateFlags.NONE, null);
+    const base64url = text => GLib.base64_encode(new TextEncoder().encode(text))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const jwt = claims => `stand-in.${base64url(JSON.stringify(claims))}.stand-in`;
+    const auth = (token, accountId) => ({tokens: {access_token: token, account_id: accountId}});
+    const later = Math.floor(Date.now() / 1000) + 3600;
+
+    let sent = null;
+    const answering = answer => ({
+        getJson: (_url, headers) => {
+            sent = headers;
+            return answer();
+        },
+    });
+    const usage = answering(() => Promise.resolve(fixture('codex-usage-free.json')));
+    const read = async http => {
+        sent = null;
+        return CodexProvider.read(http);
+    };
+
+    check('no auth.json and no keyring is signed out', (await read(usage)).status, Status.SIGNED_OUT);
+    check('without asking the service', sent, null);
+
+    write({OPENAI_API_KEY: 'stand-in', tokens: null});
+    check('an API-key login has no subscription limits', (await read(usage)).status, Status.UNSUPPORTED);
+
+    // Payloads whose base64url length is 0, 2 and 3 mod 4: each needs different padding.
+    for (const pad of ['', 'x', 'xx']) {
+        const claims = {exp: 1700000000, pad, 'https://api.openai.com/auth': {chatgpt_plan_type: 'plus'}};
+        const length = base64url(JSON.stringify(claims)).length % 4;
+        write(auth(jwt(claims), 'stand-in-account'));
+        // eslint-disable-next-line no-await-in-loop
+        const lapsed = await read(usage);
+        check(`a lapsed token (payload length ${length} mod 4)`, lapsed.status, Status.EXPIRED);
+        check('  says when, from its exp claim', lapsed.expiredAt?.to_unix(), 1700000000);
+    }
+    check('and the service is not asked', sent, null);
+
+    write(auth(jwt({exp: later, 'https://api.openai.com/auth': {chatgpt_account_id: 'from-claim'}}), 'from-field'));
+    const ok = await read(usage);
+    check('a live token reads', ok.status, Status.OK);
+    check('the token is sent as a bearer', sent.Authorization.startsWith('Bearer stand-in.'), true);
+    check('account_id is taken over the claim', sent['ChatGPT-Account-ID'], 'from-field');
+    write(auth(jwt({exp: later, 'https://api.openai.com/auth': {chatgpt_account_id: 'from-claim'}})));
+    await read(usage);
+    check('the claim when there is no field', sent['ChatGPT-Account-ID'], 'from-claim');
+
+    write(auth('not-a-jwt'));
+    check('an unreadable token is left to the request', (await read(usage)).status, Status.OK);
+
+    const failing = status => answering(() => Promise.reject(Object.assign(new Error('stand-in failure'), {status})));
+    check('a 401 is an expired login', (await read(failing(401))).status, Status.EXPIRED);
+    check('a 403 too', (await read(failing(403))).status, Status.EXPIRED);
+    const down = await read(failing(503));
+    check('a 503 is unavailable', down.status, Status.UNAVAILABLE);
+    check('with the reason', down.message, 'stand-in failure');
+    const strange = await read(answering(() => Promise.resolve({nonsense: true})));
+    check('an unknown shape is unavailable, not a throw', strange.status, Status.UNAVAILABLE);
+
+    file.delete(null);
+    Gio.File.new_for_path(home).delete(null);
+}
+
 // An unreadable response must degrade, never throw: a provider that throws
 // takes the whole pop-up down with it.
 print('\n\x1b[1mBoth\x1b[0m — a response in a shape they do not know');
