@@ -151,7 +151,12 @@ extension's own:
   and the staged copy's `lib/http.js`
   replaced by `./scripts/stand-in-http.js`, which answers with invented figures.
   No real path, login, account or network reaches it; a provider added without
-  an answer there shows as unavailable. `reload` re-stages `src/` with
+  an answer there shows as unavailable.
+* **`./scripts/nested.sh state PROVIDER STATE`** puts a stand-in provider in the
+  state its tab shows: `signed-out`, `lapsed`, `expired` (a 401), `unavailable`,
+  `unknown-shape`, `unsupported` (Codex's API key), `ok`. It rewrites or removes
+  the stand-in login, which the file monitor reads; the service's failure is in
+  `$HOME/stand-in-failures.json`, which `stand-in-http.js` reads. `reload` re-stages `src/` with
   `stand-in-http.js` (`nested_stand_in_stage`); the logins are made once per start.
 * **`./scripts/nested.sh shots [--light] [--out DIR]`** (`make shots`) takes the
   published set into `docs/screenshots/` over `start --stand-in --headless`,

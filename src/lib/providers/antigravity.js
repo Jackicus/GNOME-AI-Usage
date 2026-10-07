@@ -5,7 +5,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
 import {Limit, Status, numberOrNull, stringOrNull} from '../usage.js';
-import {failureReading, humanise, lookupSecret, parseTimestamp, readJson, reading} from './common.js';
+import {fetchReading, humanise, lookupSecret, parseTimestamp, readJson, reading} from './common.js';
 
 const LOAD_URL = 'https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist';
 const QUOTA_URL = 'https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary';
@@ -52,20 +52,16 @@ export const AntigravityProvider = {
             'User-Agent': USER_AGENT,
         };
 
-        try {
+        const result = await fetchReading(this, this._plan, async () => {
             const project = await this._project(http, headers, cancellable);
             if (!project)
                 throw new Error('the account has no Code Assist project');
-
-            const body = await http.postJson(QUOTA_URL, headers, {project}, cancellable);
-            return this._parse(body);
-        } catch (e) {
-            const failure = failureReading(this, e, this._plan);
-            // The project belongs to the login, so a rejected login forgets it.
-            if (failure.status === Status.EXPIRED)
-                this._projectId = null;
-            return failure;
-        }
+            return http.postJson(QUOTA_URL, headers, {project}, cancellable);
+        }, body => this._parse(body));
+        // The project belongs to the login, so a rejected login forgets it.
+        if (result.status === Status.EXPIRED)
+            this._projectId = null;
+        return result;
     },
 
     // Asked for once and kept, which halves the requests per poll.
