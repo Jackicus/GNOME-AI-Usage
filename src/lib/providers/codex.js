@@ -82,12 +82,21 @@ export const CodexProvider = {
                 {fallbackId: `model:${key}:secondary`, scoped: true, modelName: name});
         });
 
+        const plan = planLabel(body?.plan_type) ?? auth.plan;
+        // A null rate_limit is the service saying this account has no windows, not a new shape.
+        if (!limits.length && body?.rate_limit === null && !extra.length) {
+            return reading(this, {
+                status: Status.UNSUPPORTED,
+                plan,
+                message: 'The service reports no usage limits for this account.',
+            });
+        }
         if (!limits.length)
             throw new Error('no windows in the response');
 
         return reading(this, {
             status: Status.OK,
-            plan: planLabel(body?.plan_type) ?? auth.plan,
+            plan,
             limits,
             credits: creditsFrom(body),
         });
