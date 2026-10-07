@@ -55,7 +55,8 @@ can honour: per-model limits, where the usage went, extra usage.
 - The command-line tool of each provider you want, signed in, and on the `PATH` that
   GNOME Shell was started with.
 - libsecret's introspection data, which GNOME normally has already (Debian and Ubuntu:
-  `gir1.2-secret-1`). The Antigravity CLI keeps its login in the system keyring.
+  `gir1.2-secret-1`). The Antigravity CLI keeps its login in the system keyring, and the
+  Codex CLI can.
 
 ## Privacy and network
 
@@ -66,7 +67,7 @@ sends it to that provider's own server, the same request the provider's tool mak
 | --- | --- | --- |
 | Claude | `~/.claude/.credentials.json`, and the plan name from `~/.claude.json` | `api.anthropic.com` |
 | Antigravity | the login in the system keyring, or `~/.gemini/antigravity-cli/antigravity-oauth-token` | `cloudcode-pa.googleapis.com` |
-| Codex | `auth.json` in `$CODEX_HOME`, or `~/.codex/auth.json` | `chatgpt.com` |
+| Codex | `auth.json` in `$CODEX_HOME`, or `~/.codex/auth.json`, else its login in the system keyring | `chatgpt.com` |
 
 Nothing else goes anywhere, and the only process it starts is the opt-in `doctor` run. The
 extension never writes to these files, never keeps a token between readings and never logs

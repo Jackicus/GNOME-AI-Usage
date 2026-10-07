@@ -8,7 +8,7 @@ import {applyOptions} from '../src/lib/settings.js';
 import {AntigravityProvider, planFrom, tokenFrom} from '../src/lib/providers/antigravity.js';
 import {parseTimestamp} from '../src/lib/providers/common.js';
 import {ClaudeProvider, planLabel, readAccountTier} from '../src/lib/providers/claude.js';
-import {CodexProvider} from '../src/lib/providers/codex.js';
+import {CodexProvider, keyringAccount} from '../src/lib/providers/codex.js';
 import {ResetFormat, Status, formatBreakdown, formatPercent, formatReset, formatTime} from '../src/lib/usage.js';
 
 const THRESHOLDS = {warn: 80, critical: 95};
@@ -239,6 +239,13 @@ print('\n\x1b[1mCodex\x1b[0m — tests/fixtures/codex-usage.json  \x1b[2m(paid p
     check('with no figure to draw a bar from', reading.credits?.percent, null);
     check('and a null percent grades as normal', drawn(reading).credits.severity, 'normal');
     check('no breakdown for this provider', reading.breakdown.length, 0);
+}
+
+// The account Codex's keyring entry is filed under, worked out in Python from openai/codex's compute_store_key().
+print('\n\x1b[1mCodex\x1b[0m — the keyring entry a login kept there is filed under');
+{
+    check('cli| and 16 hex digits of the path\'s SHA-256', keyringAccount('/home/someone/.codex'), 'cli|cd5e9c565ce61932');
+    check('the same path written untidily', keyringAccount('/home/someone/./.codex/'), 'cli|cd5e9c565ce61932');
 }
 
 print('\n\x1b[1mCodex\x1b[0m — tests/fixtures/codex-usage-free.json  \x1b[2m(free plan, the live shape)\x1b[0m');

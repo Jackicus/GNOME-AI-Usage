@@ -3,11 +3,9 @@
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import Secret from 'gi://Secret?version=1';
 
 import {Limit, Status, numberOrNull, stringOrNull} from '../usage.js';
-import * as Log from '../log.js';
-import {failureReading, humanise, parseTimestamp, readJson, reading} from './common.js';
+import {failureReading, humanise, lookupSecret, parseTimestamp, readJson, reading} from './common.js';
 
 const LOAD_URL = 'https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist';
 const QUOTA_URL = 'https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary';
@@ -40,7 +38,7 @@ export const AntigravityProvider = {
 
     async read(http, cancellable = null) {
         // Read fresh every poll and never kept.
-        const auth = await lookupKeyring(cancellable) ??
+        const auth = tokenFrom(await lookupSecret(KEYRING_ATTRIBUTES, cancellable)) ??
             tokenFrom(await readJson(this.credentialsFile(), 'Antigravity token file'));
 
         if (!auth)
@@ -148,26 +146,6 @@ function windowRank(id) {
 export function planFrom(body) {
     const id = stringOrNull(body?.currentTier?.id);
     return stringOrNull(body?.paidTier?.name) ?? (id && humanise(id));
-}
-
-function lookupKeyring(cancellable) {
-    return new Promise(resolve => {
-        // go-keyring's item: the generic schema, matched on its attributes only.
-        const schema = new Secret.Schema('org.freedesktop.Secret.Generic', Secret.SchemaFlags.DONT_MATCH_NAME, {
-            service: Secret.SchemaAttributeType.STRING,
-            username: Secret.SchemaAttributeType.STRING,
-        });
-        Secret.password_lookup(schema, KEYRING_ATTRIBUTES, cancellable, (_o, result) => {
-            let secret = null;
-            try {
-                secret = JSON.parse(Secret.password_lookup_finish(result));
-            } catch (e) {
-                // A locked keyring or no secret service: the file is tried next.
-                Log.debug(`Antigravity keyring lookup failed: ${e.message}`);
-            }
-            resolve(tokenFrom(secret));
-        });
-    });
 }
 
 export function tokenFrom(parsed) {

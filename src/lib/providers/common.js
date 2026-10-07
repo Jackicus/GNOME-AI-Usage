@@ -1,5 +1,6 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import Secret from 'gi://Secret?version=1';
 
 import {Reading, Status} from '../usage.js';
 import * as Log from '../log.js';
@@ -25,6 +26,24 @@ export async function readJson(file, what) {
         Log.debug(`No ${what} to read: ${e.message}`);
         return null;
     }
+}
+
+// A CLI's own item in the secret service, as JSON, or null. Items written by
+// go-keyring and Rust's keyring carry no schema of ours, so only the attributes are matched.
+export function lookupSecret(attributes, cancellable) {
+    const schema = new Secret.Schema('org.freedesktop.Secret.Generic', Secret.SchemaFlags.DONT_MATCH_NAME,
+        Object.fromEntries(Object.keys(attributes).map(name => [name, Secret.SchemaAttributeType.STRING])));
+    return new Promise(resolve => {
+        Secret.password_lookup(schema, attributes, cancellable, (_o, result) => {
+            try {
+                resolve(JSON.parse(Secret.password_lookup_finish(result)));
+            } catch (e) {
+                // No item, a locked keyring or no secret service.
+                Log.debug(`Keyring lookup for ${attributes.service} failed: ${e.message}`);
+                resolve(null);
+            }
+        });
+    });
 }
 
 // "free-tier" -> "Free tier".

@@ -53,7 +53,7 @@ src/lib/providers/common.js       reading, readJson, humanise, parseTimestamp,
                                   failureReading, unknownShapeReading
 src/lib/providers/claude.js       Claude, via Claude Code's stored login
 src/lib/providers/antigravity.js  Antigravity, via agy's keyring login
-src/lib/providers/codex.js        Codex, via the Codex CLI's auth.json
+src/lib/providers/codex.js        Codex, via the Codex CLI's auth.json or keyring login
 tests/fixtures/         saved responses (invented values), for `make parsers`
 ```
 
@@ -166,6 +166,6 @@ bar until the driver exits, so a click and its photo are separate `do` calls,
 and the click coordinates in `./scripts/nested.d/shots.sh`
 (`SHOTS_BUTTON`, `SHOTS_TAB_*`) are measured with the indicator present.
 Antigravity's keyring lookup times out on the nested bus after about 25 s
-(`SHOTS_SETTLE`, and an expected "keyring lookup failed" log line); under
+(`SHOTS_SETTLE`, and an expected "Keyring lookup for gemini failed" log line); under
 `--stand-in` it then falls back to the stand-in token file, and under a plain
 start its tab has no figure, so it is hidden.

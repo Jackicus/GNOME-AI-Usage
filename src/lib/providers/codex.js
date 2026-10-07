@@ -5,7 +5,7 @@ import GLib from 'gi://GLib';
 
 import {Limit, Status, numberOrNull, stringOrNull} from '../usage.js';
 import * as Log from '../log.js';
-import {fetchReading, humanise, readJson, reading} from './common.js';
+import {fetchReading, humanise, lookupSecret, readJson, reading} from './common.js';
 
 const USAGE_URL = 'https://chatgpt.com/backend-api/wham/usage';
 
@@ -25,6 +25,7 @@ export const CodexProvider = {
     cli: 'codex',
     cliName: 'the Codex CLI',
     renewArgs: ['doctor'],
+    keyring: true,
 
     capabilities: {
         perModel: true,
@@ -33,13 +34,11 @@ export const CodexProvider = {
     },
 
     credentialsFile() {
-        // As the CLI does: CODEX_HOME when set and non-empty.
-        const home = GLib.getenv('CODEX_HOME') || GLib.build_filenamev([GLib.get_home_dir(), '.codex']);
-        return Gio.File.new_for_path(GLib.build_filenamev([home, 'auth.json']));
+        return Gio.File.new_for_path(GLib.build_filenamev([codexHome(), 'auth.json']));
     },
 
     async read(http, cancellable = null) {
-        const auth = await readCredentials();
+        const auth = await readCredentials(cancellable);
         if (!auth)
             return reading(this, {status: Status.SIGNED_OUT});
 
@@ -150,9 +149,23 @@ function planLabel(planType) {
     return stringOrNull(planType) && planType !== 'unknown' ? humanise(planType) : null;
 }
 
-// Read fresh every poll and never kept. A login kept in the keyring reads as signed out.
-async function readCredentials() {
-    const parsed = await readJson(CodexProvider.credentialsFile(), 'Codex credentials');
+// As the CLI does: CODEX_HOME when set and non-empty.
+function codexHome() {
+    return GLib.getenv('CODEX_HOME') || GLib.build_filenamev([GLib.get_home_dir(), '.codex']);
+}
+
+// The keyring entry the CLI writes under cli_auth_credentials_store = "keyring" or "auto":
+// "cli|" and the first 16 hex digits of the SHA-256 of CODEX_HOME's path. The CLI
+// resolves symbolic links in that path first; this does not, so a linked CODEX_HOME is missed.
+export function keyringAccount(home) {
+    const path = GLib.canonicalize_filename(home, null);
+    return `cli|${GLib.compute_checksum_for_string(GLib.ChecksumType.SHA256, path, -1).slice(0, 16)}`;
+}
+
+// Read fresh every poll and never kept: auth.json, else the keyring, which holds the same JSON.
+async function readCredentials(cancellable) {
+    const parsed = await readJson(CodexProvider.credentialsFile(), 'Codex credentials') ??
+        await lookupSecret({service: 'Codex Auth', username: keyringAccount(codexHome())}, cancellable);
     const tokens = parsed?.tokens;
     const accessToken = stringOrNull(tokens?.access_token);
 
