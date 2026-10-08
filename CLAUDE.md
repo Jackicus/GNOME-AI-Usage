@@ -2,7 +2,7 @@
 
 Shared rules for every extension come from the GNOME-EXTENSIONS kit: `../CLAUDE.md` and `../.claude/rules/` (loaded with this file), and the `gnome-ext:*` skills. `.claude/kit.sh` pulls the kit at session start, or, with no kit beside this repository, fetches it and prints its rules into the session.
 
-A GNOME Shell extension (UUID `ai-usage@jackicus`, `version-name` 0.2, shell 50)
+A GNOME Shell extension (UUID `ai-usage@jackicus`, `version-name` 0.2.1, shell 50)
 that puts one button in the top bar, with a tab per AI subscription in its pop-up,
 showing how much of each rate limit is used and when it resets. Claude and Antigravity are verified
 against live accounts; Codex against a live free-plan account (codex-cli
