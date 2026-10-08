@@ -17,7 +17,7 @@ most 16, and `session-modes` is absent: a screen lock disables the extension.
 
 ## The review guidelines, checked against this code
 
-Checked on 2026-10-07 against the
+Checked on 2026-10-08 against the
 [Review Guidelines](https://gjs.guide/extensions/review-guidelines/review-guidelines.html) and
 [Best Practices](https://gjs.guide/extensions/review-guidelines/best-practices.html), on the
 zip `make pack` builds. No blockers.
