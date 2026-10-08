@@ -22,7 +22,6 @@ paths:
   `.ai-usage-bar` and its severity class. It reads `-barlevel-overdrive-color`
   too, so that is set though never drawn. A row whose `percent` is null (credits
   switched off, a balance) has no figure and no bar.
-* The percentage cell is an `St.BoxLayout`, not an `St.Bin`, which centred the figure.
 * The last pop-up row is marked `ai-usage-last` by `_renderMenu()`, for want of
   `:last-child`.
 * Dimming is actor opacity (`DIM_OPACITY`).
