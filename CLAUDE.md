@@ -49,19 +49,17 @@ src/lib/settings.js     per-provider settings, capabilities -> switches, and
 src/lib/http.js         one libsoup session; getJson/postJson; HttpError(status)
 src/lib/log.js          debug (verbose only) / warn / error, "[AI Usage]" prefix
 src/lib/providers/registry.js     which providers exist
-src/lib/providers/common.js       reading, readJson, humanise, parseTimestamp,
-                                  failureReading, unknownShapeReading
+src/lib/providers/common.js       reading, readJson, lookupSecret, humanise,
+                                  parseTimestamp, failureReading, fetchReading
 src/lib/providers/claude.js       Claude, via Claude Code's stored login
 src/lib/providers/antigravity.js  Antigravity, via agy's keyring login
 src/lib/providers/codex.js        Codex, via the Codex CLI's auth.json or keyring login
 tests/fixtures/         saved responses (invented values), for `make parsers`
 ```
 
-What ships is `./scripts/ext.conf`'s `EXT_SHIP` (`lib/` with `lib/providers/`);
-`make pack` refuses a zip holding anything else. The kit's
-`./scripts/dev-extension.js`, the `make link` entry point, also turns the debug
-log on (`lib/log.js`'s `setVerbose`) and names its stage after a checksum of
-`lib/`'s files.
+What ships is `./scripts/ext.conf`'s `EXT_SHIP` (`lib/` with `lib/providers/`).
+The kit's `./scripts/dev-extension.js`, the `make link` entry point, also turns
+the debug log on (`lib/log.js`'s `setVerbose`).
 
 ## How it behaves
 
@@ -78,8 +76,8 @@ log on (`lib/log.js`'s `setVerbose`) and names its stage after a checksum of
   provider with no figure, or no reading yet, and the button with the last tab;
   it is still read, so it returns when the tool refreshes its login.
   `_syncProviders()` diffs against the live list, so toggling needs no restart.
-* Role `${uuid}`, placed in `panel-box` at `panel-index`. Destroying the indicator
-  releases the role, so `_place()` builds a new one to move it.
+* Role `${uuid}`, placed in `panel-box` at `panel-index`; `_place()` rebuilds it
+  to move it.
 * **Reading is lazy.** A timer (`poll-seconds`) is the fallback, skipped when
   the session has been idle for 10 minutes. The real triggers are the stored
   login changing on disk (file monitor, 2 s debounce) or in the secret service and opening a pop-up —
@@ -122,55 +120,21 @@ None.
 
 ## Verifying
 
-* `make check` — all that needs no shell, and what CI runs: ESLint, the shared
-  `schema` check (`--strict`), then `EXT_CHECKS`, each a `./scripts/dev.d/`
-  command:
+* `make check` runs, after the kit's lint and schema, `EXT_CHECKS` from
+  `./scripts/dev.d/`:
   * `parsers`: each provider's parser over `tests/fixtures/`, including that
     unknown shapes degrade rather than throw.
   * `imports`: walks everything `prefs.js` reaches, fails on St, Clutter, Meta,
     Shell, Soup or `resource:///org/gnome/shell/`, then loads the shared modules.
 
-  CI adds `libsecret` (`.github/ci-packages`): `antigravity.js` imports
-  `gi://Secret`, and the imports and parsers checks load it. It ends with `size`.
+  CI adds `libsecret` (`.github/ci-packages`): `providers/common.js` imports
+  `gi://Secret`, and the imports and parsers checks load it.
 * `make providers` — the real provider modules under plain `gjs`, printing what
   each tab would show. Tells a data problem from a drawing problem. It reads
   the real stored logins and goes to the network: ask first.
 
 ### The nested shell
 
-The kit's `./scripts/nested.sh` (`gnome-ext:nested-shell`). What is this
-extension's own:
-
-* **A plain `start` runs your install, your CLIs and your logins**, so its
-  providers read the real stored logins and go to the network. To try something
-  without that, `start --stand-in`. No `PATH` hides the CLIs: Codex's is in
-  `/usr/bin`, which every start needs.
-* **`start --stand-in`** is a stand-in world (`./scripts/nested.d/stand-in.sh`):
-  stand-in `claude`, `codex` and `agy` overlaid on `/usr/bin` (`EXT_STAND_IN_BINS`), a
-  scratch `HOME` with stand-in logins (and no `CODEX_HOME`: `EXT_STAND_IN_UNSET`),
-  and the staged copy's `lib/http.js`
-  replaced by `./scripts/stand-in-http.js`, which answers with invented figures.
-  No real path, login, account or network reaches it; a provider added without
-  an answer there shows as unavailable.
-* **`./scripts/nested.sh state PROVIDER STATE`** puts a stand-in provider in the
-  state its tab shows: `signed-out`, `lapsed`, `expired` (a 401), `unavailable`,
-  `unknown-shape`, `unsupported` (Codex's API key), `ok`. It rewrites or removes
-  the stand-in login, which the file monitor reads; the service's failure is in
-  `$HOME/stand-in-failures.json`, which `stand-in-http.js` reads. `reload` re-stages `src/` with
-  `stand-in-http.js` (`nested_stand_in_stage`); the logins are made once per start.
-* **`./scripts/nested.sh shots [--light] [--out DIR]`** (`make shots`) takes the
-  published set into `docs/screenshots/` over `start --stand-in --headless`,
-  then stops (`--light`: top bar and pop-up only, `*-light.png`; `--out`: the
-  scratchpad, to compare before committing). It refuses while a nested shell
-  runs. `--stand-in` starts in GNOME's stock look, so a shot carries none of
-  your fonts or icon theme. It ends by stripping the PNGs' text chunks with `oxipng` (it warns when `oxipng` is missing; never
-  commit them unstripped).
-
-Input is a RemoteDesktop session whose recording indicator stays in the top
-bar until the driver exits, so a click and its photo are separate `do` calls,
-and the click coordinates in `./scripts/nested.d/shots.sh`
-(`SHOTS_BUTTON`, `SHOTS_TAB_*`) are measured with the indicator present.
-Antigravity's keyring lookup times out on the nested bus after about 25 s
-(`SHOTS_SETTLE`, and an expected "Keyring lookup for gemini failed" log line); under
-`--stand-in` it then falls back to the stand-in token file, and under a plain
-start its tab has no figure, so it is hidden.
+`.claude/skills/drive-extension/SKILL.md`: always `start --stand-in` (a plain
+`start` reads the real logins and goes to the network), the stand-in world,
+`./scripts/nested.sh state`, and `make shots`.
