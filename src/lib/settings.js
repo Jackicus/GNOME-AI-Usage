@@ -21,7 +21,7 @@ function schemaSource(extensionDir) {
 export function providerSettings(extensionDir, providerId) {
     const schema = schemaSource(extensionDir).lookup(PROVIDER_SCHEMA, true);
     if (!schema)
-        throw new Error(`Missing schema ${PROVIDER_SCHEMA}; run 'make reload' to recompile it.`);
+        throw new Error(`Missing schema ${PROVIDER_SCHEMA}`);
 
     return new Gio.Settings({
         settings_schema: schema,
