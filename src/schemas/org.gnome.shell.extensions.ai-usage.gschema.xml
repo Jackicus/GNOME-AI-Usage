@@ -34,7 +34,7 @@
         </key>
 
         <key name="hide-unavailable" type="b">
-            <default>true</default>
+            <default>false</default>
             <summary>Hide a provider that has no figure to show</summary>
             <description>A provider that is signed out, expired or unreadable has no tab, and the button is hidden while none has a figure. They are still read.</description>
         </key>

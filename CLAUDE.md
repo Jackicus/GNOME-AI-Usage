@@ -72,7 +72,7 @@ the debug log on (`lib/log.js`'s `setVerbose`).
   the bottom, with refresh at the end of the tab row. A click on a tab writes
   `selected-provider`, which the next redraw reads back: the pop-up opens on that
   tab and the button shows its figure; with none chosen, or its tab hidden, the
-  first tab is selected. `hide-unavailable` (default on) drops the tab of a
+  first tab is selected. `hide-unavailable` (default off) drops the tab of a
   provider with no figure, or no reading yet, and the button with the last tab;
   it is still read, so it returns when the tool refreshes its login.
   `_syncProviders()` diffs against the live list, so toggling needs no restart.
