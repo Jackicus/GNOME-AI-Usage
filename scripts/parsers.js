@@ -9,7 +9,7 @@ import {AntigravityProvider, planFrom, tokenFrom} from '../src/lib/providers/ant
 import {parseTimestamp} from '../src/lib/providers/common.js';
 import {ClaudeProvider, planLabel, readAccountTier} from '../src/lib/providers/claude.js';
 import {CodexProvider, keyringAccount} from '../src/lib/providers/codex.js';
-import {ResetFormat, Status, formatBreakdown, formatPercent, formatReset, formatTime} from '../src/lib/usage.js';
+import {ResetFormat, Status, formatBreakdown, formatPercent, formatReset, formatTime, fullLabel} from '../src/lib/usage.js';
 
 const THRESHOLDS = {warn: 80, critical: 95};
 const EVERYTHING = {showPerModel: true, showBreakdown: true, showCredits: true};
@@ -313,11 +313,14 @@ print('\n\x1b[1mAntigravity\x1b[0m — tests/fixtures/antigravity-quota.json');
     check('the first weekly bucket is weekly_all', reading.limits[2].id, 'weekly_all');
     check('a later weekly bucket keeps its own id', reading.limits[3].id, '3p-weekly');
     check('Gemini 4 Argon keeps its own bucket id', reading.limits[4].id, 'gemini-argon-wtu-weekly');
-    check('5h window labelled', reading.limits[0].label, 'Current session · Gemini Models');
-    check('the other 5h window labelled', reading.limits[1].label, 'Current session · Claude and GPT models');
-    check('weekly window labelled', reading.limits[2].label, 'This week · Gemini Models');
-    check('the other family keeps its own row', reading.limits[3].label, 'This week · Claude and GPT models');
-    check('Gemini 4 Argon weekly window labelled', reading.limits[4].label, 'This week · Gemini 4 Argon');
+    check('5h window labelled', reading.limits[0].label, 'Gemini Models');
+    check('the other 5h window labelled', reading.limits[1].label, 'Claude and GPT models');
+    check('weekly window labelled', reading.limits[2].label, 'Gemini Models');
+    check('the other family keeps its own row', reading.limits[3].label, 'Claude and GPT models');
+    check('Gemini 4 Argon weekly window labelled', reading.limits[4].label, 'Gemini 4 Argon');
+    check('5h rows under one heading', reading.limits[1].group, 'Current Session');
+    check('weekly rows under the next', reading.limits[4].group, 'Current Week');
+    check('a notification names both', fullLabel(reading.limits[2]), 'Current Week · Gemini Models');
     // The bucket's displayName is "Weekly Limit Remaining", which over a used figure would lie.
     check('the response label is NOT reused', reading.limits[2].label.includes('Remaining'), false);
     check('an exhausted bucket is critical', drawn(reading).limits[2].severity, 'critical');

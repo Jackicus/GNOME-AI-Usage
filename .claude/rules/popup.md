@@ -15,9 +15,10 @@ paths:
   `refreshButton()`. A click on a tab only writes `selected-provider`; everything
   redraws from the setting. The tabs are rebuilt only when the providers shown change,
   so a redraw does not take the keyboard focus off one.
-* The menu has a fixed `width`, wide enough for Antigravity's longest label, so
+* The menu has a fixed `width`, wide enough for the longest label, so
   it does not move when another tab is chosen. The plan is a dimmed caption row
-  above the limits.
+  above the limits. A limit with a `group` (Antigravity's window) gets a dimmed
+  heading row above the first of its run, and its own label names only the rest.
 * The bars are the shell's `BarLevel`, drawn from `-barlevel-*` properties on
   `.ai-usage-bar` and its severity class. It reads `-barlevel-overdrive-color`
   too, so that is set though never drawn. A row whose `percent` is null (credits

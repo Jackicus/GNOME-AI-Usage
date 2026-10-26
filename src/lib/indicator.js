@@ -140,8 +140,13 @@ class UsageIndicator extends PanelMenu.Button {
             return;
         }
 
-        for (const limit of reading.limits)
+        let group = null;
+        for (const limit of reading.limits) {
+            if (limit.group && limit.group !== group)
+                this._section.addMenuItem(headingItem(limit.group));
+            group = limit.group;
             this._section.addMenuItem(limitItem(limit, resetFormat, clock));
+        }
 
         if (reading.credits)
             this._section.addMenuItem(limitItem(reading.credits, resetFormat, clock));
@@ -236,6 +241,12 @@ function limitItem(limit, resetFormat, clock) {
         value: limit.percent / 100,
         style_class: `ai-usage-bar ai-usage-${limit.severity}`,
     }));
+    return item;
+}
+
+function headingItem(text) {
+    const item = inertItem('ai-usage-heading-row');
+    item.add_child(new St.Label({text, style_class: 'ai-usage-heading', x_expand: true, opacity: DIM_OPACITY}));
     return item;
 }
 

@@ -7,7 +7,7 @@ import {Http} from './http.js';
 import {UsageIndicator} from './indicator.js';
 import {PROVIDERS} from './providers/registry.js';
 import {applyOptions, providerSettings} from './settings.js';
-import {Status, formatReset} from './usage.js';
+import {Status, formatReset, fullLabel} from './usage.js';
 import * as Log from './log.js';
 
 // A scheduled poll is skipped after this long without input.
@@ -331,7 +331,7 @@ export class AiUsageApp {
 
                 const when = limit.resetsAt ? ` ${formatReset(limit.resetsAt, wording)}.` : '';
                 Main.notify(`${reading.displayName} usage at ${Math.round(limit.percent)}%`,
-                    `${limit.label}.${when}`);
+                    `${fullLabel(limit)}.${when}`);
             }
         }
     }
