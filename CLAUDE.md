@@ -17,10 +17,12 @@ own command-line tool has already stored, and does nothing else with it:
   no tab at all, rather than a broken one.
 * It never refreshes a token. Refreshing Claude's rotates the refresh token and
   could sign the user out of Claude Code. A rejected token (401/403) is
-  `Status.EXPIRED`, and its tab asks the user to run the tool once.
-* `renew-login` (off by default) is the one way past that: once per expiry it
-  runs the tool's own `doctor` (`renewArgs`), which refreshes the login as the
-  tool starts, and the credentials watch reads the result. The tool does the
+  `Status.EXPIRED`, and its tab asks the user to run the tool once, or to press
+  refresh where the tool can renew it.
+* The tool's own `doctor` (`renewArgs`) is the one way past that: it refreshes
+  the login as the tool starts, and the credentials watch reads the result. The
+  refresh button runs it for an expired login; `renew-login` (off by default)
+  runs it unasked, once per expiry. Never two runs at once per provider. The tool does the
   refreshing, never this extension (`.claude/rules/providers.md`).
 * Tokens are read fresh on every poll and never held — the tool rewrites the
   file when it refreshes, so a cached token is a stale one.

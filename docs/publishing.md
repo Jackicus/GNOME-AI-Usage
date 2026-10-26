@@ -34,8 +34,9 @@ zip `make pack` builds. No blockers.
   size`. No `try` around `destroy()`, `disconnect()` or `GLib.Source.remove()`, no
   `_destroyed` flags, no line over 200 characters, `enable()` and `disable()` side by side.
 - **Logging.** Failures only. `Log.debug` prints under the `make link` development entry point.
-- **Subprocesses.** One, opt-in: with "Renew an expired login" on, `timeout 60 claude doctor`
-  or `codex doctor` once when a login expires, so the tool refreshes its own login. Its output
+- **Subprocesses.** One: `timeout 60 claude doctor` or `codex doctor` when the refresh button
+  is pressed on an expired login, and with "Renew an expired login" on (off by default), once
+  when a login expires, so the tool refreshes its own login. Its output
   is discarded and it exits by itself. The description and README say so. No `run_dispose()`,
   privileged process or clipboard use.
 - **Other extensions.** None touched.

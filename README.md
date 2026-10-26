@@ -34,9 +34,10 @@ installed and signed in, and a provider whose tool is not installed gets no tab.
 never refreshes a login either: if the stored login has expired, its tab says so until
 you run the tool once, which refreshes it (with "Hide a provider with nothing to show" on,
 the tab is hidden instead).
-With "Renew an expired login" on, the extension runs `claude doctor` or `codex doctor` once
-when a login expires, which makes the tool refresh it itself; it is off by default because
-it starts the tool, and Antigravity has no such command.
+Pressing refresh in the pop-up while a Claude or Codex login has expired runs `claude doctor`
+or `codex doctor`, which makes the tool refresh it itself. With "Renew an expired login" on,
+it does that unasked, once when a login expires; that is off by default because it starts
+the tool. Antigravity has no such command.
 
 ## Providers
 
@@ -69,7 +70,7 @@ sends it to that provider's own server, the same request the provider's tool mak
 | Antigravity | the login in the system keyring, or `~/.gemini/antigravity-cli/antigravity-oauth-token` | `cloudcode-pa.googleapis.com` |
 | Codex | `auth.json` in `$CODEX_HOME`, or `~/.codex/auth.json`, else its login in the system keyring | `chatgpt.com` |
 
-Nothing else goes anywhere, and the only process it starts is the opt-in `doctor` run. The
+Nothing else goes anywhere, and the only process it starts is the `doctor` run above. The
 extension never writes to these files, never keeps a token between readings and never logs
 one. What it stores is its own settings, in dconf. These are the endpoints the tools
 themselves use, not published APIs, so a provider may change them; the pop-up then says the
@@ -140,7 +141,7 @@ stored logins and goes online, just as the extension does.
   only while they run, so use the tool (`claude`, `agy` or `codex`) and it returns. With the
   option off the tab stays, and the button is amber when no provider has a figure.
 - **The button is amber with no figure**: a stored login has expired or is missing.
-  Run the tool once (`claude`, `agy` or `codex`), signing in if it asks; the new login is
+  For Claude or Codex, press refresh in the pop-up; otherwise run the tool once (`claude`, `agy` or `codex`), signing in if it asks; the new login is
   picked up within seconds. Antigravity's lasts an hour from when `agy` last started, and
   its tab says when it expired.
 - **No button at all after installing**: log out and back in, then
