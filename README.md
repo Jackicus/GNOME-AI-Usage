@@ -31,9 +31,9 @@ Claude's limits, each with a bar and its reset time, listed below.](docs/screens
 This extension never asks for a password and never signs you in or out. It reads the
 login that your provider's command-line tool has already stored, so that tool has to be
 installed and signed in, and a provider whose tool is not installed gets no tab. It
-never refreshes a login either: if the stored login has expired, its tab is hidden
-until you run the tool once, which refreshes it (or, with "Hide a provider with nothing to
-show" off, the tab stays and the pop-up asks you to).
+never refreshes a login either: if the stored login has expired, its tab says so until
+you run the tool once, which refreshes it (with "Hide a provider with nothing to show" on,
+the tab is hidden instead).
 With "Renew an expired login" on, the extension runs `claude doctor` or `codex doctor` once
 when a login expires, which makes the tool refresh it itself; it is off by default because
 it starts the tool, and Antigravity has no such command.
@@ -134,8 +134,8 @@ stored logins and goes online, just as the extension does.
 - **A provider has no tab**: its tool is not on the `PATH` GNOME Shell started with,
   or its switch is off. A tool installed into a directory your terminal adds to `PATH`
   may not be on the session's.
-- **A tab has gone, or the button**: with "Hide a provider with nothing to show" on (the
-  default), a provider that is signed out, whose stored login has expired or that could not
+- **A tab has gone, or the button**: with "Hide a provider with nothing to show" on, a
+  provider that is signed out, whose stored login has expired or that could not
   be read has no tab, and with none left the button goes too. The tools refresh their logins
   only while they run, so use the tool (`claude`, `agy` or `codex`) and it returns. With the
   option off the tab stays, and the button is amber when no provider has a figure.
