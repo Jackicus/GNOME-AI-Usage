@@ -6,7 +6,7 @@ import GLib from 'gi://GLib';
 import {Http} from '../src/lib/http.js';
 import {PROVIDERS} from '../src/lib/providers/registry.js';
 import {applyOptions} from '../src/lib/settings.js';
-import {Status, formatPercent, formatReset} from '../src/lib/usage.js';
+import {Status, formatPercent, formatReset, fullLabel} from '../src/lib/usage.js';
 import * as Log from '../src/lib/log.js';
 
 const BOLD = '\x1b[1m';
@@ -58,7 +58,7 @@ async function report(http, provider) {
     for (const limit of reading.limits) {
         const reset = formatReset(limit.resetsAt);
         const marks = limit.severity === 'normal' ? [] : [limit.severity];
-        print(`    ${limit.label.padEnd(26)} [${bar(limit.percent)}] ${formatPercent(limit.percent).padStart(4)}`
+        print(`    ${fullLabel(limit).padEnd(40)} [${bar(limit.percent)}] ${formatPercent(limit.percent).padStart(4)}`
             + `  ${DIM}${[reset, ...marks].filter(p => p).join(', ')}${OFF}`);
     }
 

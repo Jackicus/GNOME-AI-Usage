@@ -115,11 +115,11 @@ function limitFromBucket(group, bucket, sharedId) {
         return null;
 
     const window = windowLabel(bucket?.window);
-    const family = stringOrNull(group?.displayName);
     return new Limit({
         id: sharedId ?? stringOrNull(bucket?.bucketId) ?? 'quota',
         // Not the bucket's displayName, "Weekly Limit Remaining", over a used figure.
-        label: family ? `${window} · ${family}` : window,
+        label: stringOrNull(group?.displayName) ?? window,
+        group: window,
         percent: (1 - remaining) * 100,
         resetsAt: parseTimestamp(bucket?.resetTime),
     });
@@ -128,13 +128,13 @@ function limitFromBucket(group, bucket, sharedId) {
 function windowLabel(window) {
     switch (window) {
     case '5h':
-        return 'Current session';
+        return 'Current Session';
     case 'weekly':
-        return 'This week';
+        return 'Current Week';
     case 'daily':
         return 'Today';
     default:
-        return 'Current limit';
+        return 'Current Limit';
     }
 }
 

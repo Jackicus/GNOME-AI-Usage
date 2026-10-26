@@ -67,9 +67,11 @@ made per enable) then `retrieveUserQuotaSummary`.
   "Antigravity", so it is the fallback, humanised. Seen on a live Pro account on
   2026-10-04; the plan is asked for with the project, so it is kept as long as that is.
 * **The response says what is LEFT**; everything else here shows USED. Its own
-  "Weekly Limit Remaining" label would lie over the inverted figure, so labels
-  are built from window and model family (`Gemini Models`, `Claude and GPT models`,
-  `Gemini 4 Argon`). Disabled buckets (`disabled: true`) and buckets without a
+  "Weekly Limit Remaining" label would lie over the inverted figure, so a row is
+  labelled by its model family (`Gemini Models`, `Claude and GPT models`,
+  `Gemini 4 Argon`) under its window as the limit's `group` (`Current Session`,
+  `Current Week`), drawn once as a heading; a notification names both
+  (`fullLabel()`). Disabled buckets (`disabled: true`) and buckets without a
   `remainingFraction` are dropped. A parser check pins 0, 1, 0.35 and 0.8027764.
 * **Its bucket ids are the service's** (`gemini-5h`, `3p-5h`, `gemini-weekly`,
   `3p-weekly`, `gemini-argon-wtu-weekly`), which `primary-limit` cannot find, so

@@ -15,9 +15,10 @@ export const Severity = {
 };
 
 export class Limit {
-    constructor({id, label, percent, severity = Severity.NORMAL, resetsAt = null, scoped = false}) {
+    constructor({id, label, percent, severity = Severity.NORMAL, resetsAt = null, scoped = false, group = null}) {
         this.id = id;
         this.label = label;
+        this.group = group;         // a heading shared with the rows beside it, drawn once above them
         this.percent = Math.max(0, Math.min(100, percent));
         this.severity = severity;   // the service's own; applyOptions() adds the user's thresholds
         this.resetsAt = resetsAt;   // GLib.DateTime in UTC, or null when open-ended
@@ -149,6 +150,11 @@ function wallClockAt(resetsAt, now, clock, timezone) {
     const day = local.format('%Y%j');
     const thisWeek = day <= here.add_days(6).format('%Y%j') && day >= here.add_days(-6).format('%Y%j');
     return `${local.format(thisWeek ? '%a' : '%a %-d %b')} ${time}`;
+}
+
+// The label with its heading, for where the row stands alone.
+export function fullLabel(limit) {
+    return limit.group ? `${limit.group} · ${limit.label}` : limit.label;
 }
 
 export function formatPercent(percent) {

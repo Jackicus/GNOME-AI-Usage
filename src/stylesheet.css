@@ -15,7 +15,7 @@
 }
 
 /* Fixed, so the pop-up does not move when another provider's tab is chosen, and wide
-   enough for Antigravity's longest label (measured: a Quick Settings panel is 27em). */
+   enough for the longest label (measured: a Quick Settings panel is 27em). */
 .ai-usage-menu {
     width: 32em;
 }
@@ -104,6 +104,17 @@
 .ai-usage-caption-row {
     padding-top: 2px;
     padding-bottom: 6px;
+}
+
+/* A window's heading over its rows; the row below brings its own 9px. */
+.ai-usage-heading-row {
+    padding-top: 9px;
+    padding-bottom: 0;
+}
+
+.ai-usage-heading {
+    font-size: 0.85em;
+    font-weight: bold;
 }
 
 /* The plan under a tab, or at the top when the tabs are at the bottom. */
