@@ -21,7 +21,9 @@ function explain(reading, clock) {
         return `Not signed in. Run ${reading.cli} and sign in there.`;
     case Status.EXPIRED: {
         const when = reading.expiredAt ? `expired at ${formatTime(reading.expiredAt, {clock})}` : 'has expired';
-        return `The stored login ${when}. Run ${reading.cli} once and it will refresh itself.`;
+        return reading.renewable
+            ? `The stored login ${when}. Refresh to have ${reading.cli} renew it.`
+            : `The stored login ${when}. Run ${reading.cli} once and it will refresh itself.`;
     }
     case Status.UNSUPPORTED:
         return reading.message ?? 'This login has no subscription limits to show.';

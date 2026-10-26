@@ -95,8 +95,11 @@ keychain is macOS's, so Claude has no keyring to fall back to.
 
 ## Renewing an expired login
 
-`renew-login` runs `timeout 60 <cli> <renewArgs>` once per expiry (reset by the
-next good read) and does not wait: the credentials file monitor reads the result.
+`timeout 60 <cli> <renewArgs>` runs when the refresh button finds a login expired,
+and with `renew-login` on, once per expiry unasked (reset by the next good read).
+It is never started while one for that provider still runs: two refreshes with one
+refresh token can sign the tool out. Nothing waits on it: the credentials file
+monitor reads the result.
 `renewArgs` is `['doctor']` for Claude and Codex, found by pointing each CLI at a mock
 token server with fake logins (a real refresh would rotate Claude's token): Claude Code
 2.1.288 and codex-cli 0.156.0, 2026-10-03. `claude doctor` and `claude mcp list` refresh

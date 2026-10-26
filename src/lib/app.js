@@ -25,7 +25,7 @@ export class AiUsageApp {
         this._settings = extension.getSettings();
 
         this._http = null;
-        // provider id -> {provider, settings, handlerId, live, reading, renewed}, in registry order
+        // provider id -> {provider, settings, handlerId, live, reading, renewed, renewing}, in registry order
         this._providers = new Map();
         this._indicator = null;
         this._notified = new Map();   // limit key -> the resets_at (unix seconds) it was notified for
@@ -55,7 +55,8 @@ export class AiUsageApp {
             });
             // A copy per enable, so whatever a provider caches goes with disable().
             this._providers.set(provider.id,
-                {provider: Object.create(provider), settings, handlerId, live: false, reading: null, renewed: false});
+                {provider: Object.create(provider), settings, handlerId, live: false, reading: null, renewed: false,
+                    renewing: false});
         }
 
         this._settingsId = this._settings.connect('changed', (_s, key) => {
@@ -133,7 +134,7 @@ export class AiUsageApp {
     // addToStatusArea holds the role until the indicator is destroyed, so a placed button is rebuilt to move.
     _place() {
         this._indicator?.destroy();
-        const indicator = new UsageIndicator(() => this.refresh(),
+        const indicator = new UsageIndicator(() => this.refresh(true),
             id => this._settings.set_string('selected-provider', id));
         indicator.menu.connect('open-state-changed', (_menu, open) => {
             if (open)
@@ -146,7 +147,8 @@ export class AiUsageApp {
     }
 
     // A read already out is cancelled, so the newest answer is the one shown.
-    refresh() {
+    // renew: the refresh button was pressed, which renews an expired login whatever renew-login says.
+    refresh(renew = false) {
         this._cancelInFlight();
         if (!this._live().length)
             return;
@@ -154,7 +156,7 @@ export class AiUsageApp {
         const cancellable = new Gio.Cancellable();
         this._cancellable = cancellable;
 
-        this._readAll(cancellable).catch(e => {
+        this._readAll(cancellable, renew).catch(e => {
             if (!cancellable.is_cancelled())
                 Log.error('Reading usage failed', e);
         }).finally(() => {
@@ -172,7 +174,7 @@ export class AiUsageApp {
     }
 
     // The button draws as each provider answers, so a slow one holds up no other.
-    async _readAll(cancellable) {
+    async _readAll(cancellable, renew) {
         await Promise.all(this._live().map(async entry => {
             const reading = await entry.provider.read(this._http, cancellable);
             if (cancellable.is_cancelled())
@@ -182,7 +184,7 @@ export class AiUsageApp {
             if (reading.ok)
                 entry.renewed = false;
             else if (reading.status === Status.EXPIRED)
-                this._renewLogin(entry);
+                this._renewLogin(entry, renew);
             this._redraw();
             // From the untouched readings: a hidden limit still notifies.
             this._maybeNotify();
@@ -190,17 +192,24 @@ export class AiUsageApp {
     }
 
     // The tool renews its login as it starts and the credentials watch reads the
-    // result. Once per expiry, so a login the tool cannot renew costs one run.
-    _renewLogin(entry) {
+    // result. Unasked, once per expiry, so a login the tool cannot renew costs one run.
+    // Never two at once: two refreshes with one refresh token can sign the tool out.
+    _renewLogin(entry, asked) {
         const {provider} = entry;
-        if (entry.renewed || !provider.renewArgs || !this._settings.get_boolean('renew-login'))
+        if (!provider.renewArgs || entry.renewing)
+            return;
+        if (!asked && (entry.renewed || !this._settings.get_boolean('renew-login')))
             return;
 
         entry.renewed = true;
         Log.debug(`Running '${provider.cli} ${provider.renewArgs.join(' ')}' to renew the login.`);
         try {
-            Gio.Subprocess.new(['timeout', RENEW_TIMEOUT_S, provider.cli, ...provider.renewArgs],
+            const proc = Gio.Subprocess.new(['timeout', RENEW_TIMEOUT_S, provider.cli, ...provider.renewArgs],
                 Gio.SubprocessFlags.STDOUT_SILENCE | Gio.SubprocessFlags.STDERR_SILENCE);
+            entry.renewing = true;
+            proc.wait_async(null, () => {
+                entry.renewing = false;
+            });
         } catch (e) {
             Log.warn(`Could not run ${provider.cli}: ${e.message}`);
         }

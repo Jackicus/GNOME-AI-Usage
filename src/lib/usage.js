@@ -28,10 +28,11 @@ export class Limit {
 // What one provider knows right now: figures, or why there are none.
 export class Reading {
     constructor({providerId, displayName, status, plan = null, limits = [], breakdown = [], credits = null,
-        message = null, expiredAt = null, cli}) {
+        message = null, expiredAt = null, cli, renewable = false}) {
         this.providerId = providerId;
         this.displayName = displayName;
         this.cli = cli;
+        this.renewable = renewable; // the refresh button can have the tool renew an expired login
         this.status = status;
         this.plan = plan;
         this.limits = limits;

@@ -12,6 +12,7 @@ export function reading(provider, fields) {
         providerId: provider.id,
         displayName: provider.displayName,
         cli: provider.cliName,
+        renewable: !!provider.renewArgs,
         ...fields,
     });
 }
