@@ -53,7 +53,7 @@ zip `make pack` builds. No blockers.
   `glib-compile-schemas --strict` passes.
 - **Legal.** GPL-2.0-or-later, `LICENSE` in the zip, no code from other extensions. No logo or
   icon ships: the button reads "AI" and the tabs carry the names, with the disclaimer in the
-  README's "Credits and trademarks".
+  README's "Trademarks".
 - **Icons.** `St.Icon` in the shell, no emoji; the preferences use none. The pop-up's bars are
   the shell's `BarLevel`.
 - **Private API.** None.
