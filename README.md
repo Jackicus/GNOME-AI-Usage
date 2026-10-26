@@ -67,7 +67,7 @@ sends it to that provider's own server, the same request the provider's tool mak
 | Provider | Reads | Sends it to |
 | --- | --- | --- |
 | Claude | `~/.claude/.credentials.json`, and the plan name from `~/.claude.json` | `api.anthropic.com` |
-| Antigravity | the login in the system keyring, or `~/.gemini/antigravity-cli/antigravity-oauth-token` | `cloudcode-pa.googleapis.com` |
+| Antigravity | the login in the system keyring, or `~/.gemini/antigravity-cli/antigravity-oauth-token` | `daily-cloudcode-pa.googleapis.com` or `cloudcode-pa.googleapis.com` |
 | Codex | `auth.json` in `$CODEX_HOME`, or `~/.codex/auth.json`, else its login in the system keyring | `chatgpt.com` |
 
 Nothing else goes anywhere, and the only process it starts is the `doctor` run above. The

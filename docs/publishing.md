@@ -42,7 +42,8 @@ zip `make pack` builds. No blockers.
 - **Other extensions.** None touched.
 - **Network.** For each provider switched on whose CLI is on `PATH`, the login that CLI stored
   is read (a file, or the system keyring for Antigravity, and for Codex when it has no file)
-  and sent to that provider's endpoint: `api.anthropic.com`, `cloudcode-pa.googleapis.com`,
+  and sent to that provider's endpoint: `api.anthropic.com`,
+  `daily-cloudcode-pa.googleapis.com` (`cloudcode-pa.googleapis.com` for a GCP login),
   `chatgpt.com`. Nothing else is sent, no token is kept, logged or refreshed, and no provider
   file or keyring item is written. The keyring is only read, through libsecret, asynchronously,
   and its `Collection` signals are watched only to read again when a CLI rewrites its login.

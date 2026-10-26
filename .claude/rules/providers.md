@@ -41,9 +41,12 @@ wrong number.
 `agy` keeps its login in the **secret service**; the file
 `~/.gemini/antigravity-cli/antigravity-oauth-token` is only written without a
 D-Bus session and is stale on a desktop, so the keyring is tried first. Two
-POSTs to `cloudcode-pa.googleapis.com`: `loadCodeAssist` (project id, kept until
-a token is rejected or the extension is disabled: the app reads through a copy
-of each provider made per enable) then `retrieveUserQuotaSummary`.
+POSTs to `daily-cloudcode-pa.googleapis.com` (or `cloudcode-pa.googleapis.com`
+when the stored login has `auth_method: "gcp"` — `cloudcode-pa` answers a
+consumer login with stale figures and no `Gemini 4 Argon` group):
+`loadCodeAssist` (project id, kept until the host changes, a token is rejected
+or the extension is disabled: the app reads through a copy of each provider
+made per enable) then `retrieveUserQuotaSummary`.
 
 * **Its access token lasts an hour** (`token.expiry`, written with nanoseconds),
   and `agy` writes a fresh one only as it starts: an hour after `agy` was last
@@ -55,18 +58,23 @@ of each provider made per enable) then `retrieveUserQuotaSummary`.
   Anthropic's, is not known to rotate the refresh token: it needs `agy`'s OAuth
   client id and secret, which are not ours to ship, and whether it rotates has
   not been confirmed against the live endpoint (#29).
-* It answers **403** to a User-Agent not starting `antigravity`, which is why
-  `Http` sets no session-wide agent and each provider passes its own.
+* It answers **403** to a User-Agent not starting `antigravity`, and omits the
+  `Gemini Models` and `Gemini 4 Argon` groups when `antigravity/cli` carries no
+  version (`antigravity/cli/1.4.0`), which is why `Http` sets no session-wide
+  agent and each provider passes its own.
 * **The plan is `paidTier.name`** ("Google AI Pro") in the `loadCodeAssist`
   answer. `currentTier` stays `free-tier` on a subscription and its `name` is only
   "Antigravity", so it is the fallback, humanised. Seen on a live Pro account on
   2026-10-04; the plan is asked for with the project, so it is kept as long as that is.
 * **The response says what is LEFT**; everything else here shows USED. Its own
   "Weekly Limit Remaining" label would lie over the inverted figure, so labels
-  are built from window and model family. A parser check pins 0, 1 and 0.35.
-* **Its bucket ids are the service's** (`gemini-5h`, `gemini-weekly`), which
-  `primary-limit` cannot find, so the first `5h` bucket takes the id `session` and
-  the first `weekly` one `weekly_all`; the rest keep theirs.
+  are built from window and model family (`Gemini Models`, `Claude and GPT models`,
+  `Gemini 4 Argon`). Disabled buckets (`disabled: true`) and buckets without a
+  `remainingFraction` are dropped. A parser check pins 0, 1, 0.35 and 0.8027764.
+* **Its bucket ids are the service's** (`gemini-5h`, `3p-5h`, `gemini-weekly`,
+  `3p-weekly`, `gemini-argon-wtu-weekly`), which `primary-limit` cannot find, so
+  the first `5h` bucket takes the id `session` and the first `weekly` one
+  `weekly_all`; the rest keep theirs.
 
 ## Codex
 

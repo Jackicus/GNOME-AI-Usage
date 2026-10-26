@@ -272,43 +272,58 @@ print('\n\x1b[1mAntigravity\x1b[0m — the plan, from tests/fixtures/antigravity
 }
 
 // agy's stored token, as its keyring item holds it: Go writes the expiry with nanoseconds.
-print('\n\x1b[1mAntigravity\x1b[0m — the stored token and its expiry');
+print('\n\x1b[1mAntigravity\x1b[0m — the stored token, its expiry and its host');
 {
-    const token = tokenFrom({token: {access_token: 'stand-in', expiry: '2026-10-06T19:09:02.310434144+01:00'}});
+    const token = tokenFrom({
+        token: {access_token: 'stand-in', expiry: '2026-10-06T19:09:02.310434144+01:00'},
+        auth_method: 'consumer',
+    });
     check('the access token is read', token.accessToken, 'stand-in');
     check('its expiry, nanoseconds and offset', token.expiresAt?.to_unix(),
         GLib.DateTime.new_from_iso8601('2026-10-06T18:09:02Z', null).to_unix());
+    check('consumer login goes to daily-cloudcode-pa', token.host, 'https://daily-cloudcode-pa.googleapis.com');
+    check('and so does a login with no auth_method',
+        tokenFrom({token: {access_token: 'stand-in'}}).host, 'https://daily-cloudcode-pa.googleapis.com');
+    check('a GCP login goes to cloudcode-pa',
+        tokenFrom({token: {access_token: 'stand-in'}, auth_method: 'gcp'}).host, 'https://cloudcode-pa.googleapis.com');
     check('no expiry leaves it to the request', tokenFrom({token: {access_token: 'stand-in'}}).expiresAt, null);
     check('an unreadable expiry too', tokenFrom({token: {access_token: 'stand-in', expiry: 'soon'}}).expiresAt, null);
     check('no access token is no login', tokenFrom({token: {refresh_token: 'stand-in'}}), null);
 }
 
-print('\n\x1b[1mAntigravity\x1b[0m — tests/fixtures/antigravity-quota.json  \x1b[2m(real, plus a synthetic 5h bucket)\x1b[0m');
+print('\n\x1b[1mAntigravity\x1b[0m — tests/fixtures/antigravity-quota.json');
 {
-    AntigravityProvider._plan = 'Free tier';
+    AntigravityProvider._plan = 'Google AI Pro';
     const reading = AntigravityProvider._parse(fixture('antigravity-quota.json'));
 
     check('status', reading.status, Status.OK);
-    check('buckets found', reading.limits.length, 3);
+    check('buckets found across all three groups', reading.limits.length, 5);
 
     // The response says what is LEFT and the extension shows what is USED: backwards would read 100% on an
-    // untouched limit. Sorted: the 5-hour bucket first, then the weekly ones in response order.
+    // untouched limit. Sorted: the 5-hour buckets first, then the weekly ones in response order.
     check('remainingFraction 0.35 means 65% used', formatPercent(reading.limits[0].percent), '65%');
-    check('remainingFraction 0 means fully used', formatPercent(reading.limits[1].percent), '100%');
-    check('remainingFraction 1 means untouched', formatPercent(reading.limits[2].percent), '0%');
+    check('remainingFraction 1 means untouched (5h)', formatPercent(reading.limits[1].percent), '0%');
+    check('remainingFraction 0 means fully used', formatPercent(reading.limits[2].percent), '100%');
+    check('remainingFraction 1 means untouched', formatPercent(reading.limits[3].percent), '0%');
+    check('Gemini 4 Argon remainingFraction 0.8027764', formatPercent(reading.limits[4].percent), '20%');
 
     // primary-limit finds a limit by these ids; the bucket ids would leave it the worst.
     check('the first 5h bucket is the session', reading.limits[0].id, 'session');
-    check('the first weekly bucket is weekly_all', reading.limits[1].id, 'weekly_all');
-    check('a later weekly bucket keeps its own id', reading.limits[2].id, '3p-weekly');
+    check('a later 5h bucket keeps its own id', reading.limits[1].id, '3p-5h');
+    check('the first weekly bucket is weekly_all', reading.limits[2].id, 'weekly_all');
+    check('a later weekly bucket keeps its own id', reading.limits[3].id, '3p-weekly');
+    check('Gemini 4 Argon keeps its own bucket id', reading.limits[4].id, 'gemini-argon-wtu-weekly');
     check('5h window labelled', reading.limits[0].label, 'Current session · Gemini Models');
-    check('weekly window labelled', reading.limits[1].label, 'This week · Gemini Models');
-    check('the other family keeps its own row', reading.limits[2].label, 'This week · Claude and GPT models');
+    check('the other 5h window labelled', reading.limits[1].label, 'Current session · Claude and GPT models');
+    check('weekly window labelled', reading.limits[2].label, 'This week · Gemini Models');
+    check('the other family keeps its own row', reading.limits[3].label, 'This week · Claude and GPT models');
+    check('Gemini 4 Argon weekly window labelled', reading.limits[4].label, 'This week · Gemini 4 Argon');
     // The bucket's displayName is "Weekly Limit Remaining", which over a used figure would lie.
-    check('the response label is NOT reused', reading.limits[1].label.includes('Remaining'), false);
-    check('an exhausted bucket is critical', drawn(reading).limits[1].severity, 'critical');
-    check('an untouched bucket is normal', drawn(reading).limits[2].severity, 'normal');
-    check('reset time parsed, to the minute', reading.limits[1].resetsAt?.format_iso8601(), '2026-10-05T20:12:00Z');
+    check('the response label is NOT reused', reading.limits[2].label.includes('Remaining'), false);
+    check('an exhausted bucket is critical', drawn(reading).limits[2].severity, 'critical');
+    check('an untouched bucket is normal', drawn(reading).limits[3].severity, 'normal');
+    check('reset time parsed, to the minute', reading.limits[2].resetsAt?.format_iso8601(), '2026-10-05T20:12:00Z');
+    check('Argon reset time parsed, to the minute', reading.limits[4].resetsAt?.format_iso8601(), '2026-10-07T06:52:00Z');
     check('nothing is marked per-model', reading.limits.filter(l => l.scoped).length, 0);
 }
 
@@ -373,11 +388,12 @@ print('\n\x1b[1mHostile shapes\x1b[0m — a wrong number is worse than no number
     const anti = AntigravityProvider._parse({
         groups: [{displayName: 'Gemini Models', buckets: [
             {bucketId: 'gemini-weekly', window: 'weekly', remainingFraction: null},
+            {bucketId: 'gemini-disabled', window: '5h', disabled: true, remainingFraction: 0},
             {bucketId: 'gemini-5h', window: '5h', remainingFraction: 0},
         ]}],
     });
-    check('antigravity drops a null fraction', anti.limits.length, 1);
-    check('rather than reading it as fully spent', anti.limits.every(l => l.percent !== 100 || l.id === 'session'), true);
+    check('antigravity drops null and disabled buckets', anti.limits.length, 1);
+    check('and gives session to the first live 5h one', anti.limits[0].id, 'session');
 
     const codex = CodexProvider._parse({
         plan_type: 'plus',
