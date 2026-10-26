@@ -56,14 +56,24 @@ function antigravityQuota() {
             {
                 displayName: 'Gemini Models',
                 buckets: [
-                    {bucketId: 'gemini-5h', window: '5h', resetTime: inHours(3, 40), remainingFraction: 0.82},
                     {bucketId: 'gemini-weekly', window: 'weekly', resetTime: inDaysAt(5, 20), remainingFraction: 0.6},
+                    {bucketId: 'gemini-5h', window: '5h', resetTime: inHours(3, 40), remainingFraction: 0.82},
                 ],
             },
             {
                 displayName: 'Claude and GPT models',
                 buckets: [
                     {bucketId: '3p-weekly', window: 'weekly', resetTime: inDaysAt(6, 15), remainingFraction: 0.95},
+                    {bucketId: '3p-5h', window: '5h', resetTime: inHours(4, 10), remainingFraction: 1},
+                ],
+            },
+            {
+                displayName: 'Gemini 4 Argon',
+                buckets: [
+                    {
+                        bucketId: 'gemini-argon-wtu-weekly', window: 'weekly',
+                        resetTime: inDaysAt(6, 12), remainingFraction: 0.8,
+                    },
                 ],
             },
         ],
@@ -108,6 +118,8 @@ function codexUsage() {
 const ANSWERS = {
     'https://api.anthropic.com/api/oauth/usage': ['claude', claudeUsage],
     'https://chatgpt.com/backend-api/wham/usage': ['codex', codexUsage],
+    'https://daily-cloudcode-pa.googleapis.com/v1internal:loadCodeAssist': ['antigravity', antigravityProject],
+    'https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary': ['antigravity', antigravityQuota],
     'https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist': ['antigravity', antigravityProject],
     'https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary': ['antigravity', antigravityQuota],
 };

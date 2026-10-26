@@ -7,11 +7,16 @@ import GLib from 'gi://GLib';
 import {Limit, Status, numberOrNull, stringOrNull} from '../usage.js';
 import {fetchReading, humanise, lookupSecret, parseTimestamp, readJson, reading} from './common.js';
 
-const LOAD_URL = 'https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist';
-const QUOTA_URL = 'https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary';
+// agy sends consumer logins to daily-cloudcode-pa and GCP logins to cloudcode-pa;
+// cloudcode-pa answers a consumer login with stale figures and no Argon group.
+const DAILY_HOST = 'https://daily-cloudcode-pa.googleapis.com';
+const GCP_HOST = 'https://cloudcode-pa.googleapis.com';
+const LOAD_PATH = '/v1internal:loadCodeAssist';
+const QUOTA_PATH = '/v1internal:retrieveUserQuotaSummary';
 
-// The service answers 403 to a user agent not starting "antigravity".
-const USER_AGENT = 'antigravity/cli (gnome-shell-extension-ai-usage)';
+// 403 if it does not start "antigravity"; without a CLI version the Gemini and
+// Gemini 4 Argon groups are left out of the response.
+const USER_AGENT = 'antigravity/cli/1.4.0 (gnome-shell-extension-ai-usage)';
 
 const KEYRING_ATTRIBUTES = {service: 'gemini', username: 'antigravity'};
 
@@ -57,10 +62,10 @@ export const AntigravityProvider = {
         };
 
         const result = await fetchReading(this, this._plan, async () => {
-            const project = await this._project(http, headers, cancellable);
+            const project = await this._project(http, auth.host, headers, cancellable);
             if (!project)
                 throw new Error('the account has no Code Assist project');
-            return http.postJson(QUOTA_URL, headers, {project}, cancellable);
+            return http.postJson(`${auth.host}${QUOTA_PATH}`, headers, {project}, cancellable);
         }, body => this._parse(body));
         // The project belongs to the login, so a rejected login forgets it.
         if (result.status === Status.EXPIRED)
@@ -69,11 +74,13 @@ export const AntigravityProvider = {
     },
 
     // Asked for once and kept, which halves the requests per poll.
-    async _project(http, headers, cancellable) {
-        if (this._projectId)
+    async _project(http, host, headers, cancellable) {
+        if (this._projectId && this._host === host)
             return this._projectId;
 
-        const body = await http.postJson(LOAD_URL, headers, {metadata: {ideType: 'ANTIGRAVITY'}}, cancellable);
+        const body = await http.postJson(`${host}${LOAD_PATH}`, headers,
+            {metadata: {ideType: 'ANTIGRAVITY'}}, cancellable);
+        this._host = host;
         this._projectId = stringOrNull(body?.cloudaicompanionProject);
         this._plan = planFrom(body);
         return this._projectId;
@@ -103,7 +110,7 @@ export const AntigravityProvider = {
 
 // The API reports the fraction LEFT; this shows the share used.
 function limitFromBucket(group, bucket, sharedId) {
-    const remaining = numberOrNull(bucket?.remainingFraction);
+    const remaining = bucket?.disabled ? null : numberOrNull(bucket?.remainingFraction);
     if (remaining === null)
         return null;
 
@@ -148,6 +155,10 @@ export function tokenFrom(parsed) {
     if (!accessToken)
         return null;
 
-    // No expiry: the request decides.
-    return {accessToken, expiresAt: GLib.DateTime.new_from_iso8601(parsed.token.expiry ?? '', null)};
+    return {
+        accessToken,
+        // No expiry: the request decides.
+        expiresAt: GLib.DateTime.new_from_iso8601(parsed.token.expiry ?? '', null),
+        host: parsed.auth_method === 'gcp' ? GCP_HOST : DAILY_HOST,
+    };
 }
