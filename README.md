@@ -32,7 +32,7 @@ from when `agy` last started).
 
 ## Requirements
 
-- GNOME Shell 50.
+- GNOME Shell 51.
 - Each provider's tool, signed in, on the `PATH` GNOME Shell was started with.
 - libsecret's introspection data (Debian and Ubuntu: `gir1.2-secret-1`), usually there
   already.

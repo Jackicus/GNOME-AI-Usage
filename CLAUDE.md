@@ -2,7 +2,7 @@
 
 Shared rules for every extension come from gnome-ai-kit: `../CLAUDE.md` and `../.claude/rules/` (loaded with this file), and the `gnome-ext:*` skills. `.claude/kit.sh` pulls the kit at session start, or, with no kit beside this repository, fetches it and prints its rules into the session.
 
-A GNOME Shell extension (UUID `ai-usage@jackicus`, `version-name` 0.2.1, shell 50)
+A GNOME Shell extension (UUID `ai-usage@jackicus`, `version-name` 0.2.1, shell 51)
 that puts one button in the top bar, with a tab per AI subscription in its pop-up,
 showing how much of each rate limit is used and when it resets. Claude and Antigravity are verified
 against live accounts; Codex against a live free-plan account (codex-cli
@@ -118,7 +118,9 @@ so any display change is one redraw and no request. Only `enabled` re-reads.
 
 ## Private shell API
 
-None.
+None. Read against gnome-shell and mutter 51.1 (diffed from 50.5) on 2026-10-28,
+and booted on GNOME Shell 51.1 (nested): 51's `PopupMenu.close()` takes `{animate, fadeOnly}`,
+not an animation, so `_renderPanel()` calls `close()` bare.
 
 ## Verifying
 

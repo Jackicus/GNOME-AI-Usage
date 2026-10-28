@@ -85,7 +85,7 @@ class UsageIndicator extends PanelMenu.Button {
         const row = this._selected;
         this.container.visible = !!row;
         if (!row) {
-            this.menu.close(true);
+            this.menu.close();
             return;
         }
 
