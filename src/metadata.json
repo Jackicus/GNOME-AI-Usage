@@ -4,7 +4,7 @@
   "description": "Your AI subscriptions' rate limits in the top bar: one button, with a tab per provider showing the current session, the week and each model, and when each resets.\n\nClaude (Claude Code), Google Antigravity and Codex are supported, each switched on or off separately. Each needs its command-line tool installed and signed in: the extension reads the login that tool has stored and sends it only to that provider's own server, as the tool does. It never signs you in or refreshes a login itself; if one has expired, the pop-up asks you to run the tool once. For Claude and Codex, the pop-up's refresh button runs the tool's own doctor command, so the tool refreshes it, and a switch has it do so unasked.",
   "settings-schema": "org.gnome.shell.extensions.ai-usage",
   "shell-version": [
-    "50"
+    "51"
   ],
   "url": "https://github.com/Jackicus/GNOME-AI-Usage",
   "version-name": "0.2.1"

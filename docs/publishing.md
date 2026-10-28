@@ -10,7 +10,7 @@ refuses anything else and drops a compiled schema (the shell compiles it on inst
 
 ## metadata.json
 
-`uuid` is fixed once uploaded; `shell-version` is `["50"]`, the only version it has run on;
+`uuid` is fixed once uploaded; `shell-version` is `["51"]`, the only version it has run on;
 `settings-schema` is read with `getSettings()` and no argument. `version` is absent
 (extensions.gnome.org assigns it), `version-name` is letters, digits, dots and spaces, at
 most 16, and `session-modes` is absent: a screen lock disables the extension.
