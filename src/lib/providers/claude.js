@@ -165,10 +165,13 @@ export async function readAccountTier(file) {
     return stringOrNull(account?.organizationRateLimitTier) ?? stringOrNull(account?.userRateLimitTier);
 }
 
-// "default_claude_max_5x" -> "Max (5x)", as Claude Code writes it.
+// Renamed on 2026-10-30 while the stored tiers kept their old names.
+const PLAN_NAMES = {max_5x: 'Max', max_20x: 'Ultra'};
+
+// "default_claude_max_20x" -> "Ultra", "default_claude_pro" -> "Pro".
 export function planLabel(auth) {
-    const tier = auth.accountTier ?? stringOrNull(auth.rateLimitTier);
-    const plan = tier && humanise(tier.replace(/^default_claude_/, '')).replace(/ (\d+x)$/, ' ($1)');
+    const tier = (auth.accountTier ?? stringOrNull(auth.rateLimitTier))?.replace(/^default_claude_/, '');
+    const plan = tier && (PLAN_NAMES[tier] ?? humanise(tier));
     if (plan)
         return plan;
     const type = stringOrNull(auth.subscriptionType);

@@ -12,9 +12,6 @@ import {Severity, Status, formatBreakdown, formatPercent, formatReset, formatTim
 // Secondary text is dimmed with actor opacity, so it suits light and dark menus.
 const DIM_OPACITY = 160;
 
-// primary-limit -> the limit id it asks for; anything else shows the worst.
-const PRIMARY_LIMIT = {session: 'session', weekly: 'weekly_all'};
-
 function explain(reading, clock) {
     switch (reading.status) {
     case Status.SIGNED_OUT:
@@ -34,9 +31,8 @@ function explain(reading, clock) {
     }
 }
 
-// The figure the button shows for a provider: its primary limit, else its worst.
 function figureOf(reading, limit) {
-    return reading?.ok ? reading.limits.find(l => l.id === PRIMARY_LIMIT[limit]) ?? reading.worst : null;
+    return reading?.ok ? reading.primary(limit) : null;
 }
 
 export const UsageIndicator = GObject.registerClass(

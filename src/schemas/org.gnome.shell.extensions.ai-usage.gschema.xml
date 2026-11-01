@@ -26,7 +26,7 @@
         <key name="primary-limit" enum="org.gnome.shell.extensions.ai-usage.primary-limit">
             <default>'session'</default>
             <summary>Which limit the button shows</summary>
-            <description>"highest" is the limit closest to used up; "session" and "weekly" fall back to it.</description>
+            <description>"highest" is the limit closest to used up. "session" falls back to the weekly limit across all models, "weekly" to the session, then each to the highest account-wide limit.</description>
         </key>
         <key name="show-percent" type="b">
             <default>true</default>
