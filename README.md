@@ -8,8 +8,8 @@ Claude's limits, each with a bar and its reset time, listed below.](docs/screens
 
 ## What it does
 
-- **One button** showing "AI" and the selected subscription's figure, amber at 80% and
-  red at 95%.
+- **One button** showing the selected subscription's figure beside "AI", its plan name, an
+  image of your choosing or nothing, amber at 80% and red at 95%.
 - **A tab per subscription** listing the session, the week and each model, with the time
   each resets.
 - **The provider's own figures**, the same ones its command-line tool shows.
@@ -73,7 +73,7 @@ To update: `git pull && make install`, then log out and in. To remove: `make uni
 
 | Button | Readings | Providers |
 | --- | --- | --- |
-| ![The Button page: where the button sits in the top bar, the figure it shows and two switches, then where the tabs sit and how reset times are worded.](docs/screenshots/preferences-button.png) | ![The Readings page: 300 seconds between readings, then the warnings: amber from 80, red from 95, and notify from 0, which turns notifications off.](docs/screenshots/preferences-readings.png) | ![The Providers page: Claude, Codex and Antigravity, each found at its command's path in /usr/bin and each with a switch.](docs/screenshots/preferences-providers.png) |
+| ![The Button page: where the button sits in the top bar, the figure it shows, the percentage switch and what goes beside the percentage.](docs/screenshots/preferences-button.png) | ![The Readings page: 300 seconds between readings, then the warnings: amber from 80, red from 95, and notify from 0, which turns notifications off.](docs/screenshots/preferences-readings.png) | ![The Providers page: Claude, Codex and Antigravity, each found at its command's path in /usr/bin and each with a switch.](docs/screenshots/preferences-providers.png) |
 
 ## Troubleshooting
 

@@ -224,6 +224,8 @@ export class AiUsageApp {
         const thresholds = {warn: s.get_int('warn-percent'), critical: s.get_int('critical-percent')};
         const options = {
             showPercent: s.get_boolean('show-percent'),
+            buttonLabel: s.get_string('button-label'),
+            buttonIcon: s.get_string('button-icon'),
             hideUnavailable: s.get_boolean('hide-unavailable'),
             limit: s.get_string('primary-limit'),
             selected: s.get_string('selected-provider'),

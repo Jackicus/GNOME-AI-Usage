@@ -276,7 +276,7 @@ print('\n\x1b[1mCodex\x1b[0m — tests/fixtures/codex-usage-free.json  \x1b[2m(f
 print('\n\x1b[1mAntigravity\x1b[0m — the plan, from tests/fixtures/antigravity-load.json');
 {
     const load = fixture('antigravity-load.json');
-    check('a subscription is named by paidTier, not currentTier', planFrom(load), 'Google AI Pro');
+    check('a subscription is named by paidTier, not currentTier', planFrom(load), 'Pro');
     check('without one, currentTier is humanised', planFrom({currentTier: load.currentTier}), 'Free tier');
     check('with neither, there is no plan', planFrom({}), null);
 }
@@ -303,7 +303,7 @@ print('\n\x1b[1mAntigravity\x1b[0m — the stored token, its expiry and its host
 
 print('\n\x1b[1mAntigravity\x1b[0m — tests/fixtures/antigravity-quota.json');
 {
-    AntigravityProvider._plan = 'Google AI Pro';
+    AntigravityProvider._plan = 'Pro';
     const reading = AntigravityProvider._parse(fixture('antigravity-quota.json'));
 
     check('status', reading.status, Status.OK);

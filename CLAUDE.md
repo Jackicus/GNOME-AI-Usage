@@ -69,9 +69,11 @@ the debug log on (`lib/log.js`'s `setVerbose`).
   its CLI on `PATH`); the percentage is the selected tab's figure, picked by
   `primary-limit`, and tints the label by its severity. With no session limit
   (Claude Ultra) `session` takes the week across all models, never a per-model
-  row (`Reading.primary()`). `show-percent` off leaves
-  `AI`. **No provider logo or icon is used, and none will be** (README,
-  Trademarks): the tabs carry the names.
+  row (`Reading.primary()`). `button-label` puts `AI` (default), the selected
+  provider's plan, the user's own image (`button-icon`, any format the image
+  loader reads) or nothing beside it; with nothing else to show it reads `AI`.
+  **No provider logo or icon is shipped or used, and none will be** (README,
+  Trademarks): the tabs carry the names, and an icon is only the user's file.
 * **The pop-up has a tab per live provider**, at the top or, by `tab-position`,
   the bottom, with refresh at the end of the tab row. A click on a tab writes
   `selected-provider`, which the next redraw reads back: the pop-up opens on that
@@ -102,7 +104,7 @@ the debug log on (`lib/log.js`'s `setVerbose`).
 ## Settings
 
 Global keys: `primary-limit` (`session` default, `highest`, `weekly`),
-`show-percent`, `hide-unavailable`, `renew-login`, `reset-format`,
+`show-percent`, `button-label`, `button-icon`, `hide-unavailable`, `renew-login`, `reset-format`,
 `selected-provider` (the tab chosen last), `tab-position` (`top` default, `bottom`),
 `panel-box`, `panel-index`, `poll-seconds`, `warn-percent`, `critical-percent`,
 `notify-percent`.

@@ -5,6 +5,12 @@
         <value nick="session" value="1"/>
         <value nick="weekly" value="2"/>
     </enum>
+    <enum id="org.gnome.shell.extensions.ai-usage.button-label">
+        <value nick="ai" value="0"/>
+        <value nick="plan" value="1"/>
+        <value nick="icon" value="2"/>
+        <value nick="none" value="3"/>
+    </enum>
     <enum id="org.gnome.shell.extensions.ai-usage.panel-box">
         <value nick="left" value="0"/>
         <value nick="center" value="1"/>
@@ -30,7 +36,16 @@
         </key>
         <key name="show-percent" type="b">
             <default>true</default>
-            <summary>Show the percentage beside "AI"</summary>
+            <summary>Show the percentage on the button</summary>
+        </key>
+        <key name="button-label" enum="org.gnome.shell.extensions.ai-usage.button-label">
+            <default>'ai'</default>
+            <summary>What the button shows beside the percentage</summary>
+            <description>"plan" is the selected provider's plan name, "icon" the image in button-icon. Either shows "AI" while it has nothing to show, and so does "none" with no percentage.</description>
+        </key>
+        <key name="button-icon" type="s">
+            <default>''</default>
+            <summary>The image file the button shows when button-label is "icon"</summary>
         </key>
 
         <key name="hide-unavailable" type="b">

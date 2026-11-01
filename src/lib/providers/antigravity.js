@@ -143,11 +143,12 @@ function windowRank(window) {
     return rank < 0 ? 3 : rank;
 }
 
-// A subscription is in paidTier ("Google AI Pro"), while currentTier stays
-// "free-tier" and is named only "Antigravity", so its id is humanised.
+// A subscription is in paidTier ("Google AI Pro", shown as "Pro" as the other
+// plans carry no company name), while currentTier stays "free-tier" and is
+// named only "Antigravity", so its id is humanised.
 export function planFrom(body) {
     const id = stringOrNull(body?.currentTier?.id);
-    return stringOrNull(body?.paidTier?.name) ?? (id && humanise(id));
+    return stringOrNull(body?.paidTier?.name)?.replace(/^Google AI /, '') ?? (id && humanise(id));
 }
 
 export function tokenFrom(parsed) {
