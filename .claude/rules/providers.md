@@ -37,7 +37,8 @@ The tiers kept their names when the plans were renamed on 2026-10-30 (Claude Cod
 **Ultra has no session limit** once the account is verified, only `weekly_all` and a
 per-model `weekly_scoped` row for Fable
 (https://support.claude.com/en/articles/17728952-what-is-the-ultra-plan, read
-2026-11-01); an unverified one keeps a temporary session row.
+2026-11-01); an unverified one keeps a temporary session row. Seen on a live Ultra
+account on 2026-11-01: `limits[]` held only those two rows and `five_hour` was null.
 
 **The endpoint is undocumented and its shape moves** — it carries codenamed
 fields (`iguana_necktie`, `nimbus_quill`, …), which are never touched. Parsers
@@ -124,6 +125,8 @@ token server with fake logins (a real refresh would rotate Claude's token): Clau
 and rewrite the file with no model call (`mcp list` also starts the user's MCP
 servers); `claude auth status` posts the refresh but exits before saving it;
 `codex doctor` refreshes, while `codex login status` and `codex mcp list` do not.
+On 2026-11-01 `codex doctor` renewed a live expired login kept in the keyring, which
+the secret service watch then read.
 `agy models` never asked the token endpoint, so Antigravity has none (#29).
 Re-run that probe before changing a command or after a CLI major version.
 
