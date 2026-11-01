@@ -78,8 +78,8 @@ made per enable) then `retrieveUserQuotaSummary`.
 * **The response says what is LEFT**; everything else here shows USED. Its own
   "Weekly Limit Remaining" label would lie over the inverted figure, so a row is
   labelled by its model family (`Gemini Models`, `Claude and GPT models`,
-  `Gemini 4 Argon`) under its window as the limit's `group` (`Current Session`,
-  `Current Week`), drawn once as a heading; a notification names both
+  `Gemini 4 Argon`) under its window as the limit's `group` (`Current session`,
+  `Current week`), drawn once as a heading; a notification names both
   (`fullLabel()`). Disabled buckets (`disabled: true`) and buckets without a
   `remainingFraction` are dropped. A parser check pins 0, 1, 0.35 and 0.8027764.
 * **Its bucket ids are the service's** (`gemini-5h`, `3p-5h`, `gemini-weekly`,

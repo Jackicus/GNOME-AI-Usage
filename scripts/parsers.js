@@ -30,6 +30,11 @@ function check(what, got, want) {
     print(`  ${mark} ${what.padEnd(42)} ${detail}`);
 }
 
+// What the locale makes of an amount, so the checks hold in any locale.
+function inCurrency(value, currency, digits) {
+    return new Intl.NumberFormat(undefined, {style: 'currency', currency, minimumFractionDigits: digits}).format(value);
+}
+
 function fixture(name) {
     const dir = GLib.path_get_dirname(GLib.filename_from_uri(import.meta.url)[0]);
     const path = GLib.build_filenamev([dir, '..', 'tests', 'fixtures', name]);
@@ -66,7 +71,7 @@ print('\x1b[1mClaude\x1b[0m — tests/fixtures/claude-usage.json');
     // Switched off is shown as off, with no figure: the service sends only what has been spent.
     check('credits shown as off when not enabled', reading.credits?.label, 'Extra usage · off');
     check('with no figure to draw a bar from', reading.credits?.percent, null);
-    check('and what has been spent', reading.credits?.detail, '0.00 USD used');
+    check('and nothing spent is not mentioned', reading.credits?.detail, null);
     check('worst limit is the highest', formatPercent(reading.worst.percent), '97%');
     check('the button\'s session figure', reading.primary('session').id, 'session');
     check('its weekly figure', reading.primary('weekly').id, 'weekly_all');
@@ -329,9 +334,9 @@ print('\n\x1b[1mAntigravity\x1b[0m — tests/fixtures/antigravity-quota.json');
     check('weekly window labelled', reading.limits[2].label, 'Gemini Models');
     check('the other family keeps its own row', reading.limits[3].label, 'Claude and GPT models');
     check('Gemini 4 Argon weekly window labelled', reading.limits[4].label, 'Gemini 4 Argon');
-    check('5h rows under one heading', reading.limits[1].group, 'Current Session');
-    check('weekly rows under the next', reading.limits[4].group, 'Current Week');
-    check('a notification names both', fullLabel(reading.limits[2]), 'Current Week · Gemini Models');
+    check('5h rows under one heading', reading.limits[1].group, 'Current session');
+    check('weekly rows under the next', reading.limits[4].group, 'Current week');
+    check('a notification names both', fullLabel(reading.limits[2]), 'Current week · Gemini Models');
     // The bucket's displayName is "Weekly Limit Remaining", which over a used figure would lie.
     check('the response label is NOT reused', reading.limits[2].label.includes('Remaining'), false);
     check('an exhausted bucket is critical', drawn(reading).limits[2].severity, 'critical');
@@ -450,7 +455,7 @@ print('\n\x1b[1mClaude\x1b[0m — money, unknown kinds and bad times');
         extra_usage: {is_enabled: true},
         spend: {percent: 10, used: {amount_minor: 1234, currency: 'EUR', exponent: 2}},
     }, {});
-    check('minor units in the currency\'s exponent', spent.credits.label, 'Extra usage · 12.34 EUR used');
+    check('minor units in the currency\'s exponent', spent.credits.label, `Extra usage · ${inCurrency(12.34, 'EUR', 2)} used`);
     check('an unknown kind is named from itself', spent.limits[1].label, 'Weekly opus extra');
     check('and listed after the known ones', spent.limits[1].id, 'weekly_opus_extra');
     check('a reset that is not a time is none', spent.limits[0].resetsAt, null);
@@ -459,7 +464,13 @@ print('\n\x1b[1mClaude\x1b[0m — money, unknown kinds and bad times');
         extra_usage: {is_enabled: false},
         spend: {used: {amount_minor: 500, currency: 'JPY', exponent: 0}},
     }, {});
-    check('a currency with no minor unit', yen.credits.detail, '500 JPY used');
+    check('a currency with no minor unit', yen.credits.detail, `${inCurrency(500, 'JPY', 0)} used`);
+    const odd = ClaudeProvider._parse({
+        limits: [{kind: 'session', percent: 5}],
+        extra_usage: {is_enabled: false},
+        spend: {used: {amount_minor: 250, currency: 'NOTACODE', exponent: 2}},
+    }, {});
+    check('a currency Intl does not know is written out', odd.credits.detail, '2.50 NOTACODE used');
 }
 
 print('\n\x1b[1mCodex\x1b[0m — the shapes a free or odd account sends');
@@ -524,6 +535,7 @@ print('\n\x1b[1mCodex\x1b[0m — reading its login, with a stub for the network'
         // eslint-disable-next-line no-await-in-loop
         const lapsed = await read(usage);
         check(`a lapsed token (payload length ${length} mod 4)`, lapsed.status, Status.EXPIRED);
+        check('  keeps its plan', lapsed.plan, 'Plus');
         check('  says when, from its exp claim', lapsed.expiredAt?.to_unix(), 1700000000);
     }
     check('and the service is not asked', sent, null);
@@ -545,7 +557,10 @@ print('\n\x1b[1mCodex\x1b[0m — reading its login, with a stub for the network'
     check('a 403 too', (await read(failing(403))).status, Status.EXPIRED);
     const down = await read(failing(503));
     check('a 503 is unavailable', down.status, Status.UNAVAILABLE);
-    check('with the reason', down.message, 'stand-in failure');
+    check('with the reason in words', down.message, 'the service is having trouble (HTTP 503)');
+    check('nothing back is unreachable', (await read(failing(0))).message, 'the service could not be reached');
+    check('a 429 asks to wait', (await read(failing(429))).message, 'the service asked to wait before the next reading');
+    check('another status keeps its own text', (await read(failing(404))).message, 'stand-in failure');
     const strange = await read(answering(() => Promise.resolve({nonsense: true})));
     check('an unknown shape is unavailable, not a throw', strange.status, Status.UNAVAILABLE);
 

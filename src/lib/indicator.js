@@ -27,7 +27,7 @@ function explain(reading, clock) {
         return reading.message ?? 'This login has no subscription limits to show.';
     default:
         return reading.message
-            ? `Usage could not be read: ${reading.message}`
+            ? `Usage could not be read: ${reading.message.replace(/\.$/, '')}.`
             : 'Usage could not be read just now.';
     }
 }

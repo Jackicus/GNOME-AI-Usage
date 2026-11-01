@@ -50,7 +50,7 @@ export const CodexProvider = {
         }
 
         if (auth.expiresAt && auth.expiresAt.to_unix() * 1000 <= Date.now())
-            return reading(this, {status: Status.EXPIRED, expiredAt: auth.expiresAt});
+            return reading(this, {status: Status.EXPIRED, plan: auth.plan, expiredAt: auth.expiresAt});
 
         const headers = {
             'Authorization': `Bearer ${auth.accessToken}`,
