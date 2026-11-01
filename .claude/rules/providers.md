@@ -30,6 +30,14 @@ account reports its old plan. It comes from `~/.claude.json` →
 Code refreshes on start: a second file read, not a second request. Only the tier
 is taken from that file. Absent or unreadable falls back to the credentials tier,
 then `subscriptionType` — a missing plan name is fine, a wrong one is not.
+The tiers kept their names when the plans were renamed on 2026-10-30 (Claude Code
+2.1.316 still writes `default_claude_max_20x`), so `max_20x` is shown as `Ultra` and
+`max_5x` as `Max`.
+
+**Ultra has no session limit** once the account is verified, only `weekly_all` and a
+per-model `weekly_scoped` row for Fable
+(https://support.claude.com/en/articles/17728952-what-is-the-ultra-plan, read
+2026-11-01); an unverified one keeps a temporary session row.
 
 **The endpoint is undocumented and its shape moves** — it carries codenamed
 fields (`iguana_necktie`, `nimbus_quill`, …), which are never touched. Parsers
@@ -139,6 +147,7 @@ Re-run that probe before changing a command or after a CLI major version.
    provider's files, never log in, and pull nothing of St, Clutter or Soup into
    the prefs process — read `e.status` duck-typed, as `failureReading()` does.
    `make imports` enforces the last. The account-wide session and weekly limits
-   take the ids `session` and `weekly_all`, which `primary-limit` looks for.
+   take the ids `session` and `weekly_all`, which `primary-limit` looks for;
+   with neither, the button shows the worst limit not marked `scoped`.
 3. Register it in `registry.js`; preferences, settings and `make providers`
    follow. Add a fixture under `tests/fixtures/` and checks in `scripts/parsers.js`.

@@ -48,7 +48,7 @@ print('\x1b[1mClaude\x1b[0m — tests/fixtures/claude-usage.json');
         {rateLimitTier: 'default_claude_max_5x'});
 
     check('status', reading.status, Status.OK);
-    check('plan label from the rate limit tier', reading.plan, 'Max (5x)');
+    check('plan label from the rate limit tier', reading.plan, 'Max');
     check('limits found', reading.limits.length, 3);
     check('ordered session first', reading.limits[0].id, 'session');
     check('session percent', formatPercent(reading.limits[0].percent), '50%');
@@ -68,6 +68,16 @@ print('\x1b[1mClaude\x1b[0m — tests/fixtures/claude-usage.json');
     check('with no figure to draw a bar from', reading.credits?.percent, null);
     check('and what has been spent', reading.credits?.detail, '0.00 USD used');
     check('worst limit is the highest', formatPercent(reading.worst.percent), '97%');
+    check('the button\'s session figure', reading.primary('session').id, 'session');
+    check('its weekly figure', reading.primary('weekly').id, 'weekly_all');
+    check('its highest figure, per-model or not', reading.primary('highest').label, 'Weekly · Fable');
+
+    // A verified Ultra account has no session limit: the week across all models stands in, not Fable's.
+    const body = fixture('claude-usage.json');
+    const ultra = ClaudeProvider._parse({...body, limits: body.limits.filter(l => l.kind !== 'session')}, {});
+    check('no session row: the all-models week', ultra.primary('session').label, 'Weekly · all models');
+    const fableOnly = ClaudeProvider._parse({...body, limits: body.limits.filter(l => l.kind === 'weekly_scoped')}, {});
+    check('only a per-model row: that one', fableOnly.primary('session').label, 'Weekly · Fable');
 }
 
 // ~/.claude.json is the copy of the plan Claude Code refreshes; the credentials' tier is stale after a plan
@@ -101,11 +111,10 @@ print('\n\x1b[1mClaude\x1b[0m — the plan name, and which file it comes from');
     const stale = {rateLimitTier: 'default_claude_max_5x', subscriptionType: 'max'};
 
     check('the account file is read', live, 'default_claude_max_20x');
-    check('max_20x humanises', planLabel({accountTier: live}), 'Max (20x)');
-    check('it beats the stale credentials tier', planLabel({...stale, accountTier: live}), 'Max (20x)');
-    check('which on its own would have said', planLabel(stale), 'Max (5x)');
-    // The multiplier goes in brackets, and only a tier that has one.
-    check('a tier with no multiplier is left alone',
+    check('max_20x is now Ultra', planLabel({accountTier: live}), 'Ultra');
+    check('it beats the stale credentials tier', planLabel({...stale, accountTier: live}), 'Ultra');
+    check('which on its own would have said', planLabel(stale), 'Max');
+    check('a tier not renamed is humanised',
         planLabel({accountTier: 'default_claude_pro'}), 'Pro');
 
     // A personal account carries no organisation tier, so its own is taken.
@@ -126,7 +135,7 @@ print('\n\x1b[1mClaude\x1b[0m — the plan name, and which file it comes from');
         ['without oauthAccount', '{}']]) {
         check(`${what} falls back to the credentials`,
             // eslint-disable-next-line no-await-in-loop
-            planLabel({...stale, accountTier: await accountTier(text)}), 'Max (5x)');
+            planLabel({...stale, accountTier: await accountTier(text)}), 'Max');
     }
     check('with no tier anywhere, the subscription name',
         planLabel({subscriptionType: 'max', accountTier: await accountTier(null)}), 'Max');
@@ -135,7 +144,7 @@ print('\n\x1b[1mClaude\x1b[0m — the plan name, and which file it comes from');
     // And the whole way through, on a real response.
     const reading = ClaudeProvider._parse(fixture('claude-usage.json'),
         {...stale, accountTier: live});
-    check('the reading carries the live plan', reading.plan, 'Max (20x)');
+    check('the reading carries the live plan', reading.plan, 'Ultra');
 
     for (const file of written)
         file.delete(null);
@@ -261,6 +270,7 @@ print('\n\x1b[1mCodex\x1b[0m — tests/fixtures/codex-usage-free.json  \x1b[2m(f
     check('epoch reset converted', reading.limits[0].resetsAt?.format_iso8601(), '2033-06-04T12:13:20Z');
     check('null additional_rate_limits is no models', reading.limits.filter(l => l.scoped).length, 0);
     check('no credits means no credits row', reading.credits, null);
+    check('no session or week: the button shows the month', reading.primary('session').id, 'monthly');
 }
 
 print('\n\x1b[1mAntigravity\x1b[0m — the plan, from tests/fixtures/antigravity-load.json');
@@ -312,6 +322,7 @@ print('\n\x1b[1mAntigravity\x1b[0m — tests/fixtures/antigravity-quota.json');
     check('a later 5h bucket keeps its own id', reading.limits[1].id, '3p-5h');
     check('the first weekly bucket is weekly_all', reading.limits[2].id, 'weekly_all');
     check('a later weekly bucket keeps its own id', reading.limits[3].id, '3p-weekly');
+    check('the button\'s weekly figure', reading.primary('weekly').id, 'weekly_all');
     check('Gemini 4 Argon keeps its own bucket id', reading.limits[4].id, 'gemini-argon-wtu-weekly');
     check('5h window labelled', reading.limits[0].label, 'Gemini Models');
     check('the other 5h window labelled', reading.limits[1].label, 'Claude and GPT models');

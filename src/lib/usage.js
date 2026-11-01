@@ -26,6 +26,8 @@ export class Limit {
     }
 }
 
+const PRIMARY_IDS = {session: ['session', 'weekly_all'], weekly: ['weekly_all', 'session']};
+
 // What one provider knows right now: figures, or why there are none.
 export class Reading {
     constructor({providerId, displayName, status, plan = null, limits = [], breakdown = [], credits = null,
@@ -49,13 +51,27 @@ export class Reading {
     }
 
     get worst() {
-        let worst = null;
-        for (const limit of this.limits) {
-            if (!worst || limit.percent > worst.percent)
-                worst = limit;
-        }
-        return worst;
+        return worstOf(this.limits);
     }
+
+    // The figure for primary-limit: the limit it names, then the other account-wide
+    // window (an Ultra plan has no session limit), then the worst account-wide one.
+    primary(choice) {
+        const ids = PRIMARY_IDS[choice];
+        if (!ids)
+            return this.worst;
+        return ids.map(id => this.limits.find(l => l.id === id)).find(Boolean) ??
+            worstOf(this.limits.filter(l => !l.scoped)) ?? this.worst;
+    }
+}
+
+function worstOf(limits) {
+    let worst = null;
+    for (const limit of limits) {
+        if (!worst || limit.percent > worst.percent)
+            worst = limit;
+    }
+    return worst;
 }
 
 // Number(null), Number(true) and Number('') are numbers; a row without a real

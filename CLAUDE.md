@@ -67,7 +67,9 @@ the debug log on (`lib/log.js`'s `setVerbose`).
 
 * **One button, `AI` and a percentage**, while a provider is live (`enabled` and
   its CLI on `PATH`); the percentage is the selected tab's figure, picked by
-  `primary-limit`, and tints the label by its severity. `show-percent` off leaves
+  `primary-limit`, and tints the label by its severity. With no session limit
+  (Claude Ultra) `session` takes the week across all models, never a per-model
+  row (`Reading.primary()`). `show-percent` off leaves
   `AI`. **No provider logo or icon is used, and none will be** (README,
   Trademarks): the tabs carry the names.
 * **The pop-up has a tab per live provider**, at the top or, by `tab-position`,
@@ -91,8 +93,8 @@ the debug log on (`lib/log.js`'s `setVerbose`).
   more after the unlock.
 * `reset-format` words resets in pop-ups and notifications alike, through
   `formatReset()` on the desktop's `clock-format`; `auto` matches Claude Code.
-  Claude's labels (`5-hour limit`, `Weekly · all models`) and plan format
-  (`Max (20x)`) live in `claude.js`. The breakdown line shows only when two or
+  Claude's labels (`5-hour limit`, `Weekly · all models`) and plan names
+  (`Ultra`, `Max`) live in `claude.js`. The breakdown line shows only when two or
   more surfaces are above zero (`breakdownFrom()` in `claude.js` drops the
   zeros, `formatBreakdown()` wants two rows).
 * How the pop-up is drawn, and its St workarounds: `.claude/rules/popup.md`.
