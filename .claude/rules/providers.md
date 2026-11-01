@@ -112,6 +112,35 @@ derivation; a scratch gnome-keyring on a private bus read the item end to end.
 Claude Code (2.1.292) keeps its login on Linux only in `.credentials.json`; the
 keychain is macOS's, so Claude has no keyring to fall back to.
 
+## Ollama
+
+The local server, `GET /api/tags` (installed models) and `/api/ps` (in memory:
+`size`, `size_vram`, `context_length`, `expires_at`) at `OLLAMA_HOST`, read as the
+CLI's `envconfig.Host()` does (`http`, port 11434, or 80/443 when a scheme is
+given), default `http://127.0.0.1:11434`. No login, no limits, no
+`credentialsFile()`: the `Reading` is `OK` with `models` (`modelsFrom()`) and no
+limits, which the pop-up draws as a model list and the button as no figure.
+Nothing came back (status 0) is *not running*; every other failure goes through
+`failureReading()`. Read against Ollama 0.40.12 on 2026-11-01 with nothing
+loaded: `/api/tags` as in `ollama-tags.json` (names and digests invented);
+`/api/ps` with a model in memory is the documented shape, not yet seen live.
+`/api/usage` is ollama.com's cloud usage behind `ollama signin`, not read.
+
+**The server counts nothing**, so the session figures are the extension's
+samples of `/api/ps` (`sample()`): a model newly there is a load and a use, the
+time between two samples that both have it is time in memory, and an
+`expires_at` later than the last sample's is a use, since the server pushes the
+expiry back after each request. A load and unload between two samples is missed;
+the default keep-alive of 5 min is why 15 s misses nothing in practice.
+`local: true` is what puts it on the app's sampling timer, idle or not.
+
+The figures are kept in `ollama-<shell pid>.json` under
+`$XDG_RUNTIME_DIR/ai-usage/` (`sessionFile()`), written after any sample that
+changed something, read back by the first read after an enable: a screen lock
+keeps them, a logout clears the runtime directory, and a nested shell, which shares
+the runtime directory, has a pid of its own. The kit's staging sweep removes only
+`shell-<pid>` directories there, never these files.
+
 ## Renewing an expired login
 
 `timeout 60 <cli> <renewArgs>` runs when the refresh button finds a login expired,
@@ -143,7 +172,8 @@ Re-run that probe before changing a command or after a CLI major version.
    sign-in message), `capabilities` (which of `perModel`, `breakdown`, `credits` it can honour),
    `renewArgs` (optional: the CLI's arguments that make it refresh its own login,
    below), `keyring` (true when it reads the secret service, which the app then
-   watches), `credentialsFile()` (watched, so the tool's refresh is read at once) and
+   watches), `credentialsFile()` (watched, so the tool's refresh is read at once;
+   none for a provider with no login), `local` (sampled every 15 s, Ollama) and
    `read(http, cancellable)`, resolving to a `Reading`, the login read afresh
    each call. Contract: never throw (return a `Reading` with a `Status`; only a
    cancellation, which `failureReading()` throws on, goes up), never write to the

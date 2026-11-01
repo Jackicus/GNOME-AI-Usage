@@ -1,0 +1,50 @@
+{
+  "models": [
+    {
+      "name": "example-chat:latest",
+      "model": "example-chat:latest",
+      "modified_at": "2026-10-28T13:08:13.758748791Z",
+      "size": 7199173679,
+      "digest": "0000000000000000000000000000000000000000000000000000000000000001",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "gemma4",
+        "families": ["gemma4"],
+        "parameter_size": "11.9B",
+        "quantization_level": "Q4_K_S",
+        "context_length": 131072,
+        "embedding_length": 3840,
+        "runner": "ggml"
+      },
+      "capabilities": ["completion", "vision", "tools", "thinking"]
+    },
+    {
+      "name": "example-small:8b",
+      "model": "example-small:8b",
+      "modified_at": "2026-10-28T12:58:07.138948966Z",
+      "size": 5156075525,
+      "digest": "0000000000000000000000000000000000000000000000000000000000000002",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "lfm2moe",
+        "families": ["lfm2moe"],
+        "parameter_size": "8.5B",
+        "quantization_level": "Q4_K_M",
+        "context_length": 128000,
+        "embedding_length": 2048,
+        "runner": "ggml"
+      },
+      "capabilities": ["completion", "tools", "thinking"]
+    },
+    {
+      "name": "example-embed:latest",
+      "model": "example-embed:latest",
+      "modified_at": "2026-10-20T09:00:00Z",
+      "size": 274302450,
+      "digest": "0000000000000000000000000000000000000000000000000000000000000003",
+      "details": {"format": "gguf", "family": "nomic-bert", "parameter_size": "137M", "quantization_level": "F16"}
+    }
+  ]
+}

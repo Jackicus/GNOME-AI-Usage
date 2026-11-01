@@ -115,6 +115,39 @@ function codexUsage() {
     };
 }
 
+// Invented models. The second is in memory only for the first 20 s after the
+// extension loads, so the tab has one in memory and one used earlier.
+const STARTED = GLib.get_monotonic_time();
+const GIB = 1024 ** 3;
+
+function ollamaModel(name, family, parameters, quantization, size) {
+    return {
+        name, model: name, size: Math.round(size), modified_at: inHours(-30),
+        details: {format: 'gguf', family, parameter_size: parameters, quantization_level: quantization},
+    };
+}
+
+const OLLAMA_MODELS = [
+    ollamaModel('example-chat:8b', 'llama', '8.0B', 'Q4_K_M', 4.9 * GIB),
+    ollamaModel('example-coder:14b', 'qwen2', '14.8B', 'Q4_K_M', 9 * GIB),
+    ollamaModel('example-embed:latest', 'bert', '137M', 'F16', 0.27 * GIB),
+    ollamaModel('example-vision:4b', 'gemma3', '4.3B', 'Q8_0', 4.4 * GIB),
+];
+
+function ollamaTags() {
+    return {models: OLLAMA_MODELS};
+}
+
+function ollamaPs() {
+    const loaded = (model, memory, vram, context, minutes) => ({
+        ...model, size: Math.round(memory), size_vram: Math.round(vram), context_length: context, expires_at: inHours(0, minutes),
+    });
+    const models = [loaded(OLLAMA_MODELS[1], 11.2 * GIB, 11.2 * GIB, 32768, 4)];
+    if (GLib.get_monotonic_time() - STARTED < 20 * GLib.USEC_PER_SEC)
+        models.push(loaded(OLLAMA_MODELS[0], 6.1 * GIB, 6.1 * GIB, 8192, 1));
+    return {models};
+}
+
 const ANSWERS = {
     'https://api.anthropic.com/api/oauth/usage': ['claude', claudeUsage],
     'https://chatgpt.com/backend-api/wham/usage': ['codex', codexUsage],
@@ -122,6 +155,8 @@ const ANSWERS = {
     'https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary': ['antigravity', antigravityQuota],
     'https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist': ['antigravity', antigravityProject],
     'https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary': ['antigravity', antigravityQuota],
+    'http://127.0.0.1:11434/api/tags': ['ollama', ollamaTags],
+    'http://127.0.0.1:11434/api/ps': ['ollama', ollamaPs],
 };
 
 // How a provider's service fails, as './scripts/nested.sh state' writes it: {"codex": "expired"}.
@@ -155,6 +190,8 @@ export class Http {
             return Promise.reject(new HttpError(401, 'Unauthorized'));
         case 'unavailable':
             return Promise.reject(new HttpError(503, 'the stand-in service is down'));
+        case 'unreachable':
+            return Promise.reject(new HttpError(0, 'the stand-in service cannot be reached'));
         case 'unknown-shape':
             return Promise.resolve({stand_in: 'a shape no parser knows'});
         default:

@@ -6,7 +6,7 @@ import GLib from 'gi://GLib';
 import {Http} from '../src/lib/http.js';
 import {PROVIDERS} from '../src/lib/providers/registry.js';
 import {applyOptions} from '../src/lib/settings.js';
-import {Status, formatPercent, formatReset, fullLabel} from '../src/lib/usage.js';
+import {Status, describeModel, formatPercent, formatReset, fullLabel} from '../src/lib/usage.js';
 import * as Log from '../src/lib/log.js';
 
 const BOLD = '\x1b[1m';
@@ -50,6 +50,18 @@ async function report(http, provider) {
             print(`            ${reading.message}`);
         if (reading.expiredAt)
             print(`            expired at ${reading.expiredAt.to_local().format('%F %T')}`);
+        print('');
+        return;
+    }
+
+    if (!reading.limits.length) {
+        print(`  models:${reading.models.length ? '' : ' none installed'}`);
+        for (const model of reading.models) {
+            const {state, detail, usage} = describeModel(model);
+            print(`    ${model.name.padEnd(40)} ${state ?? ''}`);
+            for (const line of [detail, usage].filter(Boolean))
+                print(`      ${DIM}${line}${OFF}`);
+        }
         print('');
         return;
     }

@@ -3,5 +3,6 @@
 import {AntigravityProvider} from './antigravity.js';
 import {ClaudeProvider} from './claude.js';
 import {CodexProvider} from './codex.js';
+import {OllamaProvider} from './ollama.js';
 
-export const PROVIDERS = [ClaudeProvider, CodexProvider, AntigravityProvider];
+export const PROVIDERS = [ClaudeProvider, CodexProvider, AntigravityProvider, OllamaProvider];
