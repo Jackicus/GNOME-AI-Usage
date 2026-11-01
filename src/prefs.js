@@ -122,7 +122,8 @@ export default class AiUsagePreferences extends ExtensionPreferences {
             title: 'Providers',
             description: 'This extension never signs you in and never stores a password. It reads the login that each '
                 + "provider's own command-line tool has already saved, so signing in and out stays in one place. "
-                + 'A provider needs that tool installed and already signed in, and is offered once it is installed.',
+                + 'A provider needs that tool installed and already signed in, and is offered once it is installed. '
+                + 'Ollama needs no login: its tab reads the local server.',
         });
 
         for (const provider of PROVIDERS)
@@ -153,18 +154,26 @@ export default class AiUsagePreferences extends ExtensionPreferences {
             });
         }
 
+        const settings = providerSettings(this.dir, provider.id);
+        const keys = keysFor(provider);
+        // Nothing to expand: a plain switch row, not an empty expander.
+        if (!keys.length) {
+            const row = switchRow(settings, 'enabled', provider.displayName, `Found at ${path}`);
+            row.use_markup = false;
+            return row;
+        }
+
         const row = new Adw.ExpanderRow({
             title: provider.displayName,
             subtitle: `Found at ${path}`,
             use_markup: false,
         });
-        const settings = providerSettings(this.dir, provider.id);
 
         const toggle = new Gtk.Switch({valign: Gtk.Align.CENTER});
         settings.bind('enabled', toggle, 'active', Gio.SettingsBindFlags.DEFAULT);
         row.add_suffix(toggle);
 
-        for (const key of keysFor(provider)) {
+        for (const key of keys) {
             const child = switchRow(settings, key.key, key.title);
             settings.bind('enabled', child, 'sensitive', Gio.SettingsBindFlags.GET);
             row.add_row(child);

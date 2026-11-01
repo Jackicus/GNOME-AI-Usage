@@ -19,6 +19,10 @@ const RENEW_TIMEOUT_S = '60';
 // Opening a pop-up re-reads only figures older than this (microseconds).
 const FRESH_FOR_US = 60 * GLib.TIME_SPAN_SECOND;
 
+// A local server's session figures are samples this far apart. A model stays in
+// memory five minutes after its last request by default, so none goes unseen.
+const SAMPLE_SECONDS = 15;
+
 export class AiUsageApp {
     constructor(extension) {
         this._extension = extension;
@@ -35,8 +39,10 @@ export class AiUsageApp {
         this._interfaceId = 0;
         this._networkId = 0;
         this._timerId = 0;
+        this._sampleId = 0;
         this._debounceId = 0;
         this._cancellable = null;
+        this._sampling = null;
         this._monitors = [];
         this._keyringId = 0;
     }
@@ -86,6 +92,7 @@ export class AiUsageApp {
     disable() {
         this._unschedule();
         this._cancelInFlight();
+        this._stopSampling();
 
         this._settings.disconnect(this._settingsId);
         this._interface.disconnect(this._interfaceId);
@@ -129,6 +136,10 @@ export class AiUsageApp {
 
         const live = this._live();
         Log.debug(`Providers: ${live.map(e => e.provider.id).join(', ') || 'none'}`);
+        if (live.some(e => e.provider.local))
+            this._startSampling();
+        else
+            this._stopSampling();
         if (!live.length) {
             this._indicator?.destroy();
             this._indicator = null;
@@ -165,7 +176,7 @@ export class AiUsageApp {
         const cancellable = new Gio.Cancellable();
         this._cancellable = cancellable;
 
-        this._readAll(cancellable, renew).catch(e => {
+        this._readAll(this._live(), cancellable, renew).catch(e => {
             if (!cancellable.is_cancelled())
                 Log.error('Reading usage failed', e);
         }).finally(() => {
@@ -175,16 +186,50 @@ export class AiUsageApp {
     }
 
     // Opening the pop-up again and again would otherwise start a read each time.
+    // A sampled local server is always fresh, so it does not count.
     _refreshIfStale() {
         const now = GLib.DateTime.new_now_utc();
-        if (this._cancellable || this._live().some(e => e.reading && now.difference(e.reading.at) < FRESH_FOR_US))
+        const fresh = e => !e.provider.local && e.reading && now.difference(e.reading.at) < FRESH_FOR_US;
+        if (this._cancellable || this._live().some(fresh))
             return;
         this.refresh();
     }
 
+    _startSampling() {
+        if (this._sampleId)
+            return;
+        this._sampleId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, SAMPLE_SECONDS, () => {
+            this._sample();
+            return GLib.SOURCE_CONTINUE;
+        });
+    }
+
+    _stopSampling() {
+        if (this._sampleId)
+            GLib.Source.remove(this._sampleId);
+        this._sampleId = 0;
+        this._sampling?.cancel();
+        this._sampling = null;
+    }
+
+    // Local providers only, idle or not, and never over a sample still out.
+    _sample() {
+        if (this._sampling)
+            return;
+        const cancellable = new Gio.Cancellable();
+        this._sampling = cancellable;
+        this._readAll(this._live().filter(e => e.provider.local), cancellable, false).catch(e => {
+            if (!cancellable.is_cancelled())
+                Log.error('Sampling a local server failed', e);
+        }).finally(() => {
+            if (this._sampling === cancellable)
+                this._sampling = null;
+        });
+    }
+
     // The button draws as each provider answers, so a slow one holds up no other.
-    async _readAll(cancellable, renew) {
-        await Promise.all(this._live().map(async entry => {
+    async _readAll(entries, cancellable, renew) {
+        await Promise.all(entries.map(async entry => {
             const reading = await entry.provider.read(this._http, cancellable);
             if (cancellable.is_cancelled())
                 return;
@@ -283,7 +328,7 @@ export class AiUsageApp {
     // The tool rewriting its login means the figures moved, or an expired token is good again.
     _watchCredentials() {
         this._stopWatchingCredentials();
-        for (const {provider} of this._live()) {
+        for (const {provider} of this._live().filter(e => e.provider.credentialsFile)) {
             const monitor = provider.credentialsFile().monitor_file(Gio.FileMonitorFlags.NONE, null);
             monitor.connect('changed', () => this._refreshSoon());
             this._monitors.push(monitor);

@@ -7,6 +7,8 @@ that puts one button in the top bar, with a tab per AI subscription in its pop-u
 showing how much of each rate limit is used and when it resets. Claude and Antigravity are verified
 against live accounts; Codex against a live free-plan account (codex-cli
 0.160.0, 2026-10-02), its paid-plan windows only from openai/codex's source.
+A fourth tab, Ollama, lists the local server's models and this session's use of
+each; it has no limits, so no figure on the button.
 
 ## The rule the whole design hangs off
 
@@ -56,6 +58,7 @@ src/lib/providers/common.js       reading, readJson, lookupSecret, humanise,
 src/lib/providers/claude.js       Claude, via Claude Code's stored login
 src/lib/providers/antigravity.js  Antigravity, via agy's keyring login
 src/lib/providers/codex.js        Codex, via the Codex CLI's auth.json or keyring login
+src/lib/providers/ollama.js       Ollama's models, and this session's samples of them
 tests/fixtures/         saved responses (invented values), for `make parsers`
 ```
 
@@ -79,7 +82,7 @@ the debug log on (`lib/log.js`'s `setVerbose`).
   `selected-provider`, which the next redraw reads back: the pop-up opens on that
   tab and the button shows its figure; with none chosen, or its tab hidden, the
   first tab is selected. `hide-unavailable` (default off) drops the tab of a
-  provider with no figure, or no reading yet, and the button with the last tab;
+  provider with no `OK` reading, or no reading yet, and the button with the last tab;
   it is still read, so it returns when the tool refreshes its login.
   `_syncProviders()` diffs against the live list, so toggling needs no restart.
 * Role `${uuid}`, placed in `panel-box` at `panel-index`; `_place()` rebuilds it
@@ -89,6 +92,11 @@ the debug log on (`lib/log.js`'s `setVerbose`).
   login changing on disk (file monitor, 2 s debounce) or in the secret service and opening a pop-up —
   which re-reads only if the figures are over a minute old. The refresh button
   always reads, every provider.
+* **A `local` provider (Ollama) is sampled every 15 s**, idle or not, on a timer
+  and a cancellable of its own (`_sample()`), and never counts as fresh for the
+  pop-up's re-read. Its session figures live in
+  `$XDG_RUNTIME_DIR/ai-usage/ollama-<shell pid>.json`, so a screen lock keeps them
+  and a nested shell never shares the real session's (`.claude/rules/providers.md`).
 * **A failed read keeps the last good figures** (`keptReading()`): a read that
   comes back `UNAVAILABLE` (no network, a 5xx, a 429, an unknown shape) leaves the
   tab and the button on the last `OK` reading, under a line saying why it could

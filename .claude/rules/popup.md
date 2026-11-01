@@ -23,6 +23,14 @@ paths:
   `.ai-usage-bar` and its severity class. It reads `-barlevel-overdrive-color`
   too, so that is set though never drawn. A row whose `percent` is null (credits
   switched off, a balance) has no figure and no bar.
+* **A reading with no limits draws its `models`** (`_addModels()`): a `This
+  session` heading over the models in memory or used, each a limit row's padding
+  with its state beside the name (`In memory` in `-st-accent-color`, or a dimmed
+  `Used 12 min ago`) and up to two dimmed caption lines (`describeModel()` in
+  `usage.js`), then an `Installed` heading over the rest at one line each with half
+  the padding. No bar: nothing there is a share of a limit.
+* Kept figures (`reading.failed`) get a caption above the limits saying why they
+  were not updated and when they are from.
 * The last pop-up row is marked `ai-usage-last` by `_renderMenu()`, for want of
   `:last-child`.
 * Dimming is actor opacity (`DIM_OPACITY`).

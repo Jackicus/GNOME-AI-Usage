@@ -1,9 +1,9 @@
 # AI Usage
 
-Shows how much of your AI subscriptions' rate limits you have used, as a button in the
-GNOME Shell top bar.
+Shows how much of your AI subscriptions' rate limits you have used, and what your local
+Ollama models did this session, as a button in the GNOME Shell top bar.
 
-![The pop-up under the top-bar button reading "AI 12%", with tabs for Claude, Codex and Antigravity and
+![The pop-up under the top-bar button reading "AI 12%", with tabs for Claude, Codex, Antigravity and Ollama and
 Claude's limits, each with a bar and its reset time, listed below.](docs/screenshots/pop-up.png)
 
 ## What it does
@@ -13,6 +13,12 @@ Claude's limits, each with a bar and its reset time, listed below.](docs/screens
 - **A tab per subscription** listing the session, the week and each model, with the time
   each resets.
 - **The provider's own figures**, the same ones its command-line tool shows.
+- **An Ollama tab** listing the local server's models: which are in memory (how much, on
+  the GPU or the CPU, the context, when each unloads), and for each model used this
+  session how many times it was loaded, how long it stayed in memory and when it was last
+  used.
+- **A failed reading keeps the last figures**, saying why they could not be updated and
+  when they are from, and reads again when the network comes back.
 - **Refresh renews an expired login**: for Claude and Codex, the refresh button runs the
   tool's own `doctor`, which refreshes the login.
 - **An optional notification** when a limit passes a figure you choose.
@@ -24,11 +30,22 @@ Claude's limits, each with a bar and its reset time, listed below.](docs/screens
 | Claude | Claude Code (`claude`), signed in |
 | Antigravity | the Antigravity CLI (`agy`), signed in |
 | Codex | the Codex CLI (`codex`), signed in with ChatGPT |
+| Ollama | Ollama (`ollama`), its server running |
 
 The extension never signs you in. It reads the login the tool has already stored, and a
 provider whose tool is not installed gets no tab. When a login expires, its tab says so:
 press refresh (Claude, Codex) or run the tool once (Antigravity, whose login lasts an hour
 from when `agy` last started).
+
+Ollama has no limits and no login. Its server keeps no count of what each model did, so the
+extension looks at what the server holds in memory every 15 seconds and adds it up itself:
+a model loaded and unloaded between two looks is missed, and use while the screen is locked
+is not counted. The figures are kept in a file in `$XDG_RUNTIME_DIR` until you log out.
+`OLLAMA_HOST` is read as the CLI reads it, from GNOME Shell's environment.
+
+![The Ollama tab: under "This session", example-coder:14b in memory (12.0 GB, 100% GPU, 32K
+context, unloads in 4 min, loaded once) and example-chat:8b used a minute ago; under
+"Installed", two more models with their size.](docs/screenshots/pop-up-ollama.png)
 
 ## Requirements
 
@@ -47,6 +64,7 @@ makes itself:
 | Claude | `~/.claude/.credentials.json`, the plan from `~/.claude.json` | `api.anthropic.com` |
 | Antigravity | the system keyring, or `~/.gemini/antigravity-cli/antigravity-oauth-token` | `daily-cloudcode-pa.googleapis.com` (`cloudcode-pa` for a GCP login) |
 | Codex | `$CODEX_HOME/auth.json` or `~/.codex/auth.json`, else the system keyring | `chatgpt.com` |
+| Ollama | nothing: it asks the server which models it has and holds | the Ollama server, `127.0.0.1:11434` or `OLLAMA_HOST` |
 
 Nothing else goes anywhere. It never writes to these files, keeps a token or logs one, and
 the only process it starts is the tool's `doctor`. These endpoints are not published APIs,
@@ -73,7 +91,7 @@ To update: `git pull && make install`, then log out and in. To remove: `make uni
 
 | Button | Readings | Providers |
 | --- | --- | --- |
-| ![The Button page: where the button sits in the top bar, the figure it shows, the percentage switch and what goes beside the percentage.](docs/screenshots/preferences-button.png) | ![The Readings page: 300 seconds between readings, then the warnings: amber from 80, red from 95, and notify from 0, which turns notifications off.](docs/screenshots/preferences-readings.png) | ![The Providers page: Claude, Codex and Antigravity, each found at its command's path in /usr/bin and each with a switch.](docs/screenshots/preferences-providers.png) |
+| ![The Button page: where the button sits in the top bar, the figure it shows, the percentage switch and what goes beside the percentage.](docs/screenshots/preferences-button.png) | ![The Readings page: 300 seconds between readings, then the warnings: amber from 80, red from 95, and notify from 0, which turns notifications off.](docs/screenshots/preferences-readings.png) | ![The Providers page: Claude, Codex, Antigravity and Ollama, each found at its command's path and each with a switch.](docs/screenshots/preferences-providers.png) |
 
 ## Troubleshooting
 
@@ -84,6 +102,9 @@ journalctl -f -o cat SYSLOG_IDENTIFIER=org.gnome.Shell.Extensions   # the prefer
 
 - **A provider has no tab**: its switch is off, or its tool is not on the session's
   `PATH` (a directory only your terminal adds does not count).
+- **The Ollama tab says the server is not running**: start it (`systemctl start ollama`,
+  or `ollama serve`). A server on another address needs `OLLAMA_HOST` in the session's
+  environment, not only your terminal's.
 - **The button is amber with no figure**: a login has expired or is missing. Press
   refresh, or run the tool once.
 - **No button after installing**: log out and back in, then enable it.
@@ -99,7 +120,8 @@ GPL-2.0-or-later. See [LICENSE](LICENSE).
 
 ## Trademarks
 
-Claude is a trademark of Anthropic, Antigravity of Google, and Codex and OpenAI of OpenAI.
+Claude is a trademark of Anthropic, Antigravity of Google, Codex and OpenAI of OpenAI, and
+Ollama of Ollama.
 The names only say which service a figure belongs to; this extension is not affiliated
 with or endorsed by any of them, and ships none of their logos. The figures in the
 screenshots are invented.

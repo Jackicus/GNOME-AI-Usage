@@ -18,9 +18,9 @@ steps and its settings are there. This is what is particular to AI Usage.
 - **Always `--stand-in`, unless the user asks.** A plain `start` runs the real install,
   CLIs and logins, so its providers read the real stored logins and go to the network.
   No `PATH` hides the CLIs: Codex's is in `/usr/bin`, which every start needs.
-- **The stand-in world** (`./scripts/nested.d/stand-in.sh`): stand-in `claude`, `codex`
-  and `agy` overlaid on `/usr/bin` (`EXT_STAND_IN_BINS`), a scratch `HOME` with stand-in
-  logins (and no `CODEX_HOME`: `EXT_STAND_IN_UNSET`), and the staged copy's `lib/http.js`
+- **The stand-in world** (`./scripts/nested.d/stand-in.sh`): stand-in `claude`, `codex`,
+  `agy` and `ollama` overlaid on `/usr/bin` (`EXT_STAND_IN_BINS`), a scratch `HOME` with stand-in
+  logins (and no `CODEX_HOME` or `OLLAMA_HOST`: `EXT_STAND_IN_UNSET`), and the staged copy's `lib/http.js`
   replaced by `./scripts/stand-in-http.js`, which answers with invented figures. A
   provider added without an answer there shows as unavailable. `reload` re-stages `src/`
   with it (`nested_stand_in_stage`); the logins are made once per start.
@@ -28,8 +28,9 @@ steps and its settings are there. This is what is particular to AI Usage.
   default monitor while the input session's recording indicator is in the bar (it shifts
   everything left of it). The pop-up opens below it, tabs at the top by default.
 - **States**: `./scripts/nested.sh state PROVIDER STATE` (`claude`, `codex`,
-  `antigravity`; `ok`, `signed-out`, `lapsed`, `expired`, `unavailable`,
-  `unknown-shape`, `unsupported`). It rewrites or removes the stand-in login, which the
+  `antigravity`, `ollama`; `ok`, `signed-out`, `lapsed`, `expired`, `unavailable`,
+  `unreachable`, `unknown-shape`, `unsupported`; Ollama only `ok`, `unavailable` and
+  `unreachable`, its server stopped, seen at the next 15 s sample). It rewrites or removes the stand-in login, which the
   file monitor reads; the service's failure is in `$HOME/stand-in-failures.json`, which
   `stand-in-http.js` reads.
 - **Antigravity's keyring lookup times out on the nested bus after about 25 s** (and logs
@@ -38,6 +39,12 @@ steps and its settings are there. This is what is particular to AI Usage.
 - **Its settings**: `./scripts/nested.sh run timeout 5 gsettings --schemadir src/schemas set
   org.gnome.shell.extensions.ai-usage tab-position bottom`. The preferences:
   `./scripts/nested.sh run gnome-extensions prefs ai-usage@jackicus`, then `do "window FILE"`.
+
+- **The Ollama tab** is the fourth, about (1429, 68) once the pop-up is open. Its
+  stand-in has four models: `example-coder:14b` in memory throughout, and
+  `example-chat:8b` in memory only for the first 20 s after each enable or reload,
+  so it shows as used earlier. Its session figures go to the real
+  `$XDG_RUNTIME_DIR/ai-usage/ollama-<nested pid>.json`, which no other shell reads.
 
 ## Screenshots
 

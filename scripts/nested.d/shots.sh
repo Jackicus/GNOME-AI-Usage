@@ -1,6 +1,7 @@
 #   ./scripts/nested.sh shots [--light] [--out DIR]
 #                                     start a stand-in nested shell (headless), open the
-#                                     button's pop-up and the preferences, write the
+#                                     button's pop-up (its first and Ollama tabs) and
+#                                     the preferences, write the
 #                                     pictures to docs/screenshots/ (or DIR), and stop
 #                                     it; --light does the top bar and the pop-up again
 #                                     in a light shell, as *-light.png
@@ -15,6 +16,9 @@ SHOTS_SETTLE=35
 # clicks the bar and photographs the wallpaper. Re-measure with 'start --stand-in --headless' and
 # 'do "click 1368 16" "shot FILE 0 0 1600 36"'.
 SHOTS_BUTTON="1368 16"
+# The pop-up's first tab (Claude) and its Ollama tab, the fourth.
+SHOTS_TAB_CLAUDE="1168 68"
+SHOTS_TAB_OLLAMA="1429 68"
 # The preferences window opens centred, so its tabs are at fixed points too.
 SHOTS_TAB_BUTTON="677 201"
 SHOTS_TAB_READINGS="799 201"
@@ -74,7 +78,10 @@ shots_take() {
     shots_do "click $SHOTS_BUTTON" "wait 1.5" || return 1
     # The recording indicator outlives its process by a few seconds: still there at 4, gone by 6.
     shots_do "wait 6" "shot $out/pop-up$suffix.png 1092 0 508 340" || return 1
-    shots_do "key Escape" || return 1
+    shots_do "click $SHOTS_TAB_OLLAMA" "wait 1" || return 1
+    shots_do "wait 6" "shot $out/pop-up-ollama$suffix.png 1092 0 508 390" || return 1
+    # Back to the first tab, which the next run's pictures open on.
+    shots_do "click $SHOTS_TAB_CLAUDE" "key Escape" || return 1
 
     # The preferences are a GTK window with its own colour setting, so there is no second scheme to shoot.
     (( light )) && return 0

@@ -31,7 +31,7 @@ const PRIMARY_IDS = {session: ['session', 'weekly_all'], weekly: ['weekly_all', 
 // What one provider knows right now: figures, or why there are none.
 export class Reading {
     constructor({providerId, displayName, status, plan = null, limits = [], breakdown = [], credits = null,
-        message = null, expiredAt = null, cli, renewable = false}) {
+        models = [], message = null, expiredAt = null, cli, renewable = false}) {
         this.providerId = providerId;
         this.displayName = displayName;
         this.cli = cli;
@@ -41,6 +41,7 @@ export class Reading {
         this.limits = limits;
         this.breakdown = breakdown; // [{label, percent}] -- where the week went
         this.credits = credits;     // {percent, label, detail?}; percent null when switched off
+        this.models = models;       // a local server's models: ollama.js's modelsFrom()
         this.message = message;
         this.expiredAt = expiredAt; // GLib.DateTime, when a login is known to have lapsed
         this.at = GLib.DateTime.new_now_utc();
@@ -196,4 +197,53 @@ export function formatBreakdown(rows) {
         return null;
     const parts = rows.map(row => `${row.label} ${formatPercent(row.percent)}`);
     return `Where this week went: ${parts.join(' · ')}`;
+}
+
+// "32K" for 32768, "128K" for 128000.
+function formatTokens(count) {
+    return `${Math.round(count / (count % 1000 ? 1024 : 1000))}K`;
+}
+
+// Where a model runs, as `ollama ps` says it: "100% GPU", "CPU", "48% GPU".
+function formatProcessor({size, vram}) {
+    if (!size || vram === null)
+        return null;
+    const gpu = Math.round(vram / size * 100);
+    return gpu > 0 ? `${gpu}% GPU` : 'CPU';
+}
+
+// "8.1 GB · 100% GPU · 32K context · Unloads in 4 min".
+function memoryDetail(memory, now, clock, timezone) {
+    const {size, context, unloadsAt} = memory;
+    // An expiry days away is a model kept loaded for good.
+    const unloads = unloadsAt && unloadsAt.difference(now) < GLib.TIME_SPAN_DAY &&
+        formatReset(unloadsAt, {now, clock, timezone})?.replace(/^Resets/, 'Unloads');
+    return [size && GLib.format_size(size), formatProcessor(memory), context && `${formatTokens(context)} context`, unloads];
+}
+
+// The wording of a local model's row: the state beside its name, what it is or
+// what it holds in memory, and this session's figures.
+export function describeModel(model, {now = null, clock = null, timezone = null} = {}) {
+    const at = now ?? GLib.DateTime.new_now_utc();
+    let state = null;
+    if (model.memory) {
+        state = 'In memory';
+    } else if (model.session?.lastUsed) {
+        const ago = Math.round(at.difference(model.session.lastUsed) / GLib.TIME_SPAN_MINUTE);
+        state = `Used ${ago < 1 ? 'just now' : `${howLong(ago)} ago`}`;
+    }
+
+    const detail = model.memory
+        ? memoryDetail(model.memory, at, clock, timezone)
+        : [model.parameters, model.quantization, model.size && GLib.format_size(model.size)];
+
+    let usage = null;
+    if (model.session) {
+        const {loads, inMemoryMs} = model.session;
+        const minutes = Math.round(inMemoryMs / 60000);
+        usage = `Loaded ${loads === 1 ? 'once' : `${loads} times`}, ` +
+            `${minutes < 1 ? 'under a minute' : howLong(minutes)} in memory`;
+    }
+
+    return {state, detail: detail.filter(Boolean).join(' · ') || null, usage};
 }

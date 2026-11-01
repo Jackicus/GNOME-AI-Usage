@@ -1,10 +1,13 @@
 #   ./scripts/nested.sh state PROVIDER STATE
 #                                     under --stand-in, put a provider (claude, codex,
-#                                     antigravity) in a state its tab can show: ok,
-#                                     signed-out, lapsed (a login past its expiry; not
-#                                     claude), expired (the service answers 401),
-#                                     unavailable (503), unknown-shape, unsupported
-#                                     (codex's API-key login). It re-reads at once
+#                                     antigravity, ollama) in a state its tab can show:
+#                                     ok, signed-out, lapsed (a login past its expiry;
+#                                     not claude), expired (the service answers 401),
+#                                     unavailable (503), unreachable (nothing answers:
+#                                     ollama's server stopped), unknown-shape,
+#                                     unsupported (codex's API-key login). Ollama has
+#                                     no login: ok, unavailable and unreachable only,
+#                                     seen at its next sample (15 s). It re-reads at once
 #
 
 # The stand-in world for 'start --stand-in' (and so 'shots'), since the pictures go into a public
@@ -67,8 +70,8 @@ stand_in_login_file() {
 # Every state is reached by writing or removing the login file, which the extension watches.
 cmd_state() {
     local provider="${1:-}" state="${2:-}" home="$STAND_IN_HOME" failures file
-    [[ "$provider" =~ ^(claude|codex|antigravity)$ ]] \
-        || die "Usage: state claude|codex|antigravity ok|signed-out|lapsed|expired|unavailable|unknown-shape|unsupported"
+    [[ "$provider" =~ ^(claude|codex|antigravity|ollama)$ ]] \
+        || die "Usage: state claude|codex|antigravity|ollama ok|signed-out|lapsed|expired|unavailable|unreachable|unknown-shape|unsupported"
     is_running && stand_in || die "This needs a nested shell started with --stand-in."
     failures="$home/stand-in-failures.json"
     file="$(stand_in_login_file "$home" "$provider")"
@@ -82,13 +85,19 @@ try:
 except (OSError, ValueError):
     failures = {}
 failures.pop(provider, None)
-if state in ('expired', 'unavailable', 'unknown-shape'):
+if state in ('expired', 'unavailable', 'unreachable', 'unknown-shape'):
     failures[provider] = state
 json.dump(failures, open(path, 'w'))
 PY
 
+    if [[ "$provider" == ollama ]]; then
+        [[ "$state" =~ ^(ok|unavailable|unreachable)$ ]] || die "Ollama has no login: ok, unavailable or unreachable."
+        ok "ollama: $state. Seen at its next sample, within 15 s."
+        return 0
+    fi
+
     case "$state" in
-        ok|expired|unavailable|unknown-shape)
+        ok|expired|unavailable|unreachable|unknown-shape)
             stand_in_login "$home" "$provider" '+1 day' ;;
         signed-out)
             rm -f "$file" ;;

@@ -8,7 +8,7 @@ import * as BarLevel from 'resource:///org/gnome/shell/ui/barLevel.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-import {Severity, Status, formatBreakdown, formatPercent, formatReset, formatTime} from './usage.js';
+import {Severity, Status, describeModel, formatBreakdown, formatPercent, formatReset, formatTime} from './usage.js';
 
 // Secondary text is dimmed with actor opacity, so it suits light and dark menus.
 const DIM_OPACITY = 160;
@@ -74,7 +74,7 @@ class UsageIndicator extends PanelMenu.Button {
     // options: the object built in app.js's _redraw().
     setReadings(entries, options) {
         const rows = entries.map(entry => ({...entry, figure: figureOf(entry.reading, options.limit)}));
-        this._rows = options.hideUnavailable ? rows.filter(row => row.figure) : rows;
+        this._rows = options.hideUnavailable ? rows.filter(row => row.reading?.ok) : rows;
         this._selected = this._rows.find(row => row.id === options.selected) ?? this._rows[0];
         this._options = options;
 
@@ -162,6 +162,12 @@ class UsageIndicator extends PanelMenu.Button {
                 `Could not update: ${reading.failed}. These figures are from ${formatTime(reading.at, {clock})}.`));
         }
 
+        // A local server has models rather than limits.
+        if (!reading.limits.length) {
+            this._addModels(reading.models, clock);
+            return;
+        }
+
         let group = null;
         for (const limit of reading.limits) {
             if (limit.group && limit.group !== group)
@@ -176,6 +182,27 @@ class UsageIndicator extends PanelMenu.Button {
         const breakdown = formatBreakdown(reading.breakdown);
         if (breakdown)
             this._section.addMenuItem(captionItem(breakdown));
+    }
+
+    // What ran this session first, then the rest of what is installed, a line each.
+    _addModels(models, clock) {
+        if (!models.length) {
+            this._section.addMenuItem(captionItem('No models are installed. Pull one with ollama pull.'));
+            return;
+        }
+
+        const used = models.filter(model => model.memory || model.session);
+        this._section.addMenuItem(headingItem('This session'));
+        if (!used.length)
+            this._section.addMenuItem(captionItem('No model has run yet this session.'));
+        for (const model of used)
+            this._section.addMenuItem(modelItem(describeModel(model, {clock}), model.name));
+
+        const rest = models.filter(model => !used.includes(model));
+        if (rest.length)
+            this._section.addMenuItem(headingItem('Installed'));
+        for (const model of rest)
+            this._section.addMenuItem(installedItem(describeModel(model, {clock}), model.name));
     }
 });
 
@@ -263,6 +290,42 @@ function limitItem(limit, resetFormat, clock) {
         value: limit.percent / 100,
         style_class: `ai-usage-bar ai-usage-${limit.severity}`,
     }));
+    return item;
+}
+
+function rowLabel(text, styleClass, props = {}) {
+    const label = new St.Label({text, style_class: styleClass, y_align: Clutter.ActorAlign.CENTER, ...props});
+    label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+    return label;
+}
+
+// Name and state, then what it holds in memory or what it is, then its session figures.
+function modelItem({state, detail, usage}, name) {
+    const item = inertItem('ai-usage-limit');
+    const column = new St.BoxLayout({style_class: 'ai-usage-model', orientation: Clutter.Orientation.VERTICAL, x_expand: true});
+
+    const top = new St.BoxLayout({style_class: 'ai-usage-limit-row'});
+    top.add_child(rowLabel(name, 'ai-usage-limit-label', {x_expand: true}));
+    if (state === 'In memory')
+        top.add_child(rowLabel(state, 'ai-usage-limit-reset ai-usage-in-memory'));
+    else if (state)
+        top.add_child(rowLabel(state, 'ai-usage-limit-reset', {opacity: DIM_OPACITY}));
+    column.add_child(top);
+
+    for (const line of [detail, usage].filter(Boolean))
+        column.add_child(rowLabel(line, 'ai-usage-caption', {opacity: DIM_OPACITY}));
+    item.add_child(column);
+    return item;
+}
+
+// One line: the name, and what the model is.
+function installedItem({detail}, name) {
+    const item = inertItem('ai-usage-installed');
+    const row = new St.BoxLayout({style_class: 'ai-usage-limit-row', x_expand: true});
+    row.add_child(rowLabel(name, 'ai-usage-installed-label', {x_expand: true}));
+    if (detail)
+        row.add_child(rowLabel(detail, 'ai-usage-caption', {opacity: DIM_OPACITY}));
+    item.add_child(row);
     return item;
 }
 

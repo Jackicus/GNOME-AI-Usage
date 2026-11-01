@@ -9,8 +9,9 @@ import {AntigravityProvider, planFrom, tokenFrom} from '../src/lib/providers/ant
 import {parseTimestamp} from '../src/lib/providers/common.js';
 import {ClaudeProvider, planLabel, readAccountTier} from '../src/lib/providers/claude.js';
 import {CodexProvider, keyringAccount} from '../src/lib/providers/codex.js';
+import {OllamaProvider, modelsFrom, sample, serverUrl} from '../src/lib/providers/ollama.js';
 import {
-    Limit, Reading, ResetFormat, Status, formatBreakdown, formatPercent, formatReset, formatTime, fullLabel, keptReading,
+    Limit, Reading, ResetFormat, Status, describeModel, formatBreakdown, formatPercent, formatReset, formatTime, fullLabel, keptReading,
 } from '../src/lib/usage.js';
 
 const THRESHOLDS = {warn: 80, critical: 95};
@@ -590,6 +591,109 @@ print('\n\x1b[1mA failed read\x1b[0m — the last good figures stay, without the
     check('the good reading is left alone', good.failed, null);
     good.limits.pop();
     check('nothing left to keep is the failure', keptReading(good, failed), null);
+}
+
+print('\n\x1b[1mOllama\x1b[0m — where the server is, from OLLAMA_HOST as the CLI reads it');
+for (const [value, want] of [
+    ['', 'http://127.0.0.1:11434'],
+    ['0.0.0.0', 'http://0.0.0.0:11434'],
+    ['localhost:8080', 'http://localhost:8080'],
+    ['http://box', 'http://box:80'],
+    ['https://ollama.example/', 'https://ollama.example:443'],
+    ['[::1]', 'http://[::1]:11434'],
+])
+    check(`'${value}'`, serverUrl(value), want);
+
+print('\n\x1b[1mOllama\x1b[0m — this session, from samples of /api/ps');
+// GLib.format_size() puts a no-break space before the unit.
+{
+    const session = {models: {}, sampledAt: null};
+    const at = (minutes, seconds = 0) => Date.UTC(2026, 10, 1, 12, minutes, seconds);
+    sample(session, new Map([['example-small:8b', at(5)]]), at(0));
+    check('a model in memory is a load', session.models['example-small:8b'].loads, 1);
+    check('and a use', session.models['example-small:8b'].lastUsed, at(0));
+    sample(session, new Map([['example-small:8b', at(5)]]), at(0, 15));
+    check('time in memory adds up between samples', session.models['example-small:8b'].inMemoryMs, 15000);
+    check('the same expiry is no new use', session.models['example-small:8b'].lastUsed, at(0));
+    sample(session, new Map([['example-small:8b', at(6)]]), at(0, 30));
+    check('a later expiry is a request', session.models['example-small:8b'].lastUsed, at(0, 30));
+    check('no new samples, nothing changed', sample(session, new Map(), at(0, 45)), true);
+    check('gone from /api/ps is unloaded', session.models['example-small:8b'].loaded, false);
+    check('and an empty sample after that changes nothing', sample(session, new Map(), at(1)), false);
+    sample(session, new Map([['example-small:8b', at(7)]]), at(2));
+    check('loaded again is a second load', session.models['example-small:8b'].loads, 2);
+    check('time unloaded is not counted', session.models['example-small:8b'].inMemoryMs, 30000);
+
+    const models = modelsFrom(fixture('ollama-tags.json'), fixture('ollama-ps.json'), session);
+    check('every installed model is listed', models.length, 3);
+    check('the one in memory first', models[0].name, 'example-small:8b');
+    check(':latest is left off a name', models[1].name, 'example-chat');
+    check('then the server\'s order', models[2].name, 'example-embed');
+
+    const words = {now: GLib.DateTime.new_from_iso8601('2026-11-01T12:30:00Z', null), clock: '24h',
+        timezone: GLib.TimeZone.new_utc()};
+    const inMemory = describeModel(models[0], words);
+    check('in memory, beside its name', inMemory.state, 'In memory');
+    check('its memory, processor, context and unload', inMemory.detail, '6.4\u00a0GB · 50% GPU · 32K context · Unloads in 5 min');
+    check('its session figures', inMemory.usage, 'Loaded 2 times, 1 min in memory');
+    const installed = describeModel(models[1], words);
+    check('an unused model says what it is', installed.detail, '11.9B · Q4_K_S · 7.2\u00a0GB');
+    check('and has no session figures', installed.usage, null);
+    check('nor a state', installed.state, null);
+
+    const earlier = describeModel({...models[0], memory: null}, words);
+    check('unloaded, it says when it was last used', earlier.state, 'Used 28 min ago');
+    const cpu = describeModel({...models[0], memory: {size: 1e9, vram: 0, context: 4096, unloadsAt: null}}, words);
+    check('no memory on the GPU is the CPU', cpu.detail, '1.0\u00a0GB · CPU · 4K context');
+    const forGood = words.now.add_years(200);
+    check('kept loaded for good says no unload',
+        describeModel({...models[0], memory: {size: 1e9, vram: 1e9, context: 128000, unloadsAt: forGood}}, words).detail,
+        '1.0\u00a0GB · 100% GPU · 128K context');
+
+    check('a garbled answer lists nothing rather than throw',
+        modelsFrom({models: [null, {name: 7}]}, {models: 'no'}, {models: {}}).length, 0);
+}
+
+print('\n\x1b[1mOllama\x1b[0m — reading the server, with a stub for the network');
+{
+    const runtime = GLib.dir_make_tmp('ai-usage-ollama-XXXXXX');
+    const kept = Gio.File.new_for_path(GLib.build_filenamev([runtime, 'ai-usage', 'ollama-test.json']));
+    GLib.unsetenv('OLLAMA_HOST');
+    const asked = [];
+    const server = answer => ({
+        getJson: url => {
+            asked.push(url);
+            return answer(url);
+        },
+    });
+    const ollama = Object.assign(Object.create(OllamaProvider), {sessionFile: () => kept});
+    const up = await ollama.read(server(url => Promise.resolve(fixture(url.endsWith('/api/ps') ? 'ollama-ps.json' : 'ollama-tags.json'))));
+    check('a running server reads', up.status, Status.OK);
+    check('from its default address', asked[0], 'http://127.0.0.1:11434/api/tags');
+    check('with its models', up.models.length, 3);
+    check('and no limits, so the button has no figure', up.primary('session'), null);
+    const down = await ollama.read(server(() => Promise.reject(Object.assign(new Error('refused'), {status: 0}))));
+    check('a server not running is unavailable', down.status, Status.UNAVAILABLE);
+    check('and says so', down.message, 'the Ollama server at http://127.0.0.1:11434 is not running');
+    check('with nothing to keep from before', keptReading(up, down), null);
+
+    const dir = kept.get_parent();
+    // The session file is written without waiting on it.
+    const settle = () => new Promise(resolve => {
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 200, () => {
+            resolve();
+            return GLib.SOURCE_REMOVE;
+        });
+    });
+    await settle();
+    check('the session is kept in the runtime directory', kept.query_exists(null), true);
+    const again = Object.assign(Object.create(OllamaProvider), {sessionFile: () => kept});
+    const reread = await again.read(server(url => Promise.resolve(fixture(url.endsWith('/api/ps') ? 'ollama-ps.json' : 'ollama-tags.json'))));
+    check('and read back by the next enable', reread.models[0].session?.loads, 1);
+    await settle();
+    kept.delete(null);
+    dir.delete(null);
+    Gio.File.new_for_path(runtime).delete(null);
 }
 
 // An unreadable response must degrade, never throw: a provider that throws

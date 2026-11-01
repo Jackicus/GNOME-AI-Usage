@@ -117,6 +117,25 @@
     font-weight: bold;
 }
 
+/* A model's lines sit closer than rows do. */
+.ai-usage-model {
+    spacing: 2px;
+}
+
+.ai-usage-in-memory {
+    color: -st-accent-color;
+}
+
+/* An installed model is one line, so it takes half a row's padding. */
+.ai-usage-installed {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.ai-usage-installed-label {
+    font-size: 0.95em;
+}
+
 /* The plan under a tab, or at the top when the tabs are at the bottom. */
 .ai-usage-plan {
     padding-top: 6px;
