@@ -70,11 +70,24 @@ export function failureReading(provider, e, plan) {
         throw e;
     // Duck-typed, not HttpError: importing http.js would put Soup in prefs' graph.
     const expired = e.status === 401 || e.status === 403;
+    if (!expired)
+        Log.debug(`Reading ${provider.displayName} failed: ${e.message}`);
     return reading(provider, {
         status: expired ? Status.EXPIRED : Status.UNAVAILABLE,
         plan,
-        message: expired ? null : e.message,
+        message: expired ? null : failureReason(e),
     });
+}
+
+// In words: the transport's own text says "HTTP 503" or names a resolver.
+function failureReason(e) {
+    if (e.status === 0)
+        return 'the service could not be reached';
+    if (e.status === 429)
+        return 'the service asked to wait before the next reading';
+    if (e.status >= 500)
+        return `the service is having trouble (HTTP ${e.status})`;
+    return e.message;
 }
 
 // A failed request and a response in an unknown shape are different readings.

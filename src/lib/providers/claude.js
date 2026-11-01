@@ -129,14 +129,21 @@ function creditsFrom(body) {
     };
 }
 
+// In the locale's currency format; nothing for nothing spent.
 function money(amount) {
     const minor = Number(amount?.amount_minor);
-    if (!Number.isFinite(minor))
+    if (!Number.isFinite(minor) || minor <= 0)
         return null;
     const exponent = numberOrNull(amount?.exponent) ?? 2;
     const value = minor / 10 ** exponent;
-    const currency = stringOrNull(amount?.currency) ?? '';
-    return `${value.toFixed(exponent)} ${currency}`.trim();
+    const currency = stringOrNull(amount?.currency);
+    try {
+        return new Intl.NumberFormat(undefined, {style: 'currency', currency, minimumFractionDigits: exponent})
+            .format(value);
+    } catch {
+        // No currency, or a code Intl does not know.
+        return `${value.toFixed(exponent)} ${currency ?? ''}`.trim();
+    }
 }
 
 function kindRank(id) {
