@@ -157,6 +157,10 @@ class UsageIndicator extends PanelMenu.Button {
             this._section.addMenuItem(captionItem(explain(reading, clock)));
             return;
         }
+        if (reading.failed) {
+            this._section.addMenuItem(captionItem(
+                `Could not update: ${reading.failed}. These figures are from ${formatTime(reading.at, {clock})}.`));
+        }
 
         let group = null;
         for (const limit of reading.limits) {
