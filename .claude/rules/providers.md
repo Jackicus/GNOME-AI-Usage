@@ -71,8 +71,8 @@ made per enable) then `retrieveUserQuotaSummary`.
   `Gemini Models` and `Gemini 4 Argon` groups when `antigravity/cli` carries no
   version (`antigravity/cli/1.4.0`), which is why `Http` sets no session-wide
   agent and each provider passes its own.
-* **The plan is `paidTier.name`** ("Google AI Pro") in the `loadCodeAssist`
-  answer. `currentTier` stays `free-tier` on a subscription and its `name` is only
+* **The plan is `paidTier.name`** ("Google AI Pro", shown as "Pro" like the other
+  providers' plans) in the `loadCodeAssist` answer. `currentTier` stays `free-tier` on a subscription and its `name` is only
   "Antigravity", so it is the fallback, humanised. Seen on a live Pro account on
   2026-10-04; the plan is asked for with the project, so it is kept as long as that is.
 * **The response says what is LEFT**; everything else here shows USED. Its own

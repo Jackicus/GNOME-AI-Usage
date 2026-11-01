@@ -48,7 +48,16 @@ export default class AiUsagePreferences extends ExtensionPreferences {
             ['weekly', 'This week'],
         ]));
         shown.add(switchRow(settings, 'show-percent', 'Show the percentage',
-            'With this off the button is just "AI", tinted by how much has been used.'));
+            'With this off the button shows only its label, tinted by how much has been used.'));
+        const label = comboRow(settings, 'button-label', 'Beside the percentage', [
+            ['ai', '“AI”'],
+            ['plan', 'Plan name'],
+            ['icon', 'An icon'],
+            ['none', 'Nothing'],
+        ]);
+        label.subtitle = 'The plan of the selected tab, such as Pro. While there is nothing to show, the button reads “AI”.';
+        shown.add(label);
+        shown.add(iconRow(settings));
         shown.add(switchRow(settings, 'hide-unavailable', 'Hide a provider with nothing to show',
             'Signed out, login expired or unreadable. The tool refreshes its login only while it runs, '
             + 'so its tab returns by itself once you have used it. With none left the button goes too.'));
@@ -163,6 +172,42 @@ export default class AiUsagePreferences extends ExtensionPreferences {
 
         return row;
     }
+}
+
+// Shown only while the button is set to an icon.
+function iconRow(settings) {
+    const row = new Adw.ActionRow({title: 'Icon', use_markup: false});
+    const choose = new Gtk.Button({
+        icon_name: 'document-open-symbolic',
+        tooltip_text: 'Choose an image',
+        valign: Gtk.Align.CENTER,
+        css_classes: ['flat'],
+    });
+    row.add_suffix(choose);
+    row.activatable_widget = choose;
+
+    const filter = new Gtk.FileFilter({name: 'Images'});
+    filter.add_pixbuf_formats();
+    choose.connect('clicked', () => {
+        const dialog = new Gtk.FileDialog({title: 'Choose an Icon', default_filter: filter});
+        dialog.open(row.get_root(), null, (_dialog, result) => {
+            try {
+                settings.set_string('button-icon', dialog.open_finish(result).get_path());
+            } catch {
+                // Dismissed, or a file with no local path.
+            }
+        });
+    });
+
+    const sync = () => {
+        const path = settings.get_string('button-icon');
+        row.subtitle = path ? GLib.path_get_basename(path) : 'None chosen';
+        row.visible = settings.get_string('button-label') === 'icon';
+    };
+    sync();
+    const changedId = settings.connect('changed', sync);
+    row.connect('destroy', () => settings.disconnect(changedId));
+    return row;
 }
 
 function switchRow(settings, key, title, subtitle) {

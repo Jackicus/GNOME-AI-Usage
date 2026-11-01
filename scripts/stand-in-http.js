@@ -47,7 +47,7 @@ function claudeUsage() {
 }
 
 function antigravityProject() {
-    return {cloudaicompanionProject: 'stand-in-project', currentTier: {id: 'standard-tier'}};
+    return {cloudaicompanionProject: 'stand-in-project', currentTier: {id: 'free-tier'}, paidTier: {name: 'Google AI Pro'}};
 }
 
 function antigravityQuota() {

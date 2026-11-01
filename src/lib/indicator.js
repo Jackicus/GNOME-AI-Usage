@@ -1,4 +1,5 @@
 import Clutter from 'gi://Clutter';
+import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
@@ -43,12 +44,18 @@ class UsageIndicator extends PanelMenu.Button {
         // menu.box is the actor that gets `.popup-menu-content`, so the width goes there.
         this.menu.box.add_style_class_name('ai-usage-menu');
 
+        // The shell's own box for an icon with a label in the top bar.
+        this._box = new St.BoxLayout({style_class: 'panel-status-indicators-box'});
+        this._icon = new St.Icon({style_class: 'system-status-icon', visible: false});
+        this._iconPath = '';
         this._label = new St.Label({
             text: 'AI',
             style_class: 'ai-usage-panel-label',
             y_align: Clutter.ActorAlign.CENTER,
         });
-        this.add_child(this._label);
+        this._box.add_child(this._icon);
+        this._box.add_child(this._label);
+        this.add_child(this._box);
 
         this._select = select;
         this._rows = [];
@@ -88,8 +95,23 @@ class UsageIndicator extends PanelMenu.Button {
         // No figure: amber when the fix is the user's (signing in again).
         const broken = row.reading?.status === Status.EXPIRED || row.reading?.status === Status.SIGNED_OUT;
         const severity = row.figure ? row.figure.severity : broken ? Severity.WARNING : Severity.NORMAL;
-        this._label.style_class = `ai-usage-panel-label ai-usage-${severity}`;
-        this._label.set_text(row.figure && this._options.showPercent ? `AI ${formatPercent(row.figure.percent)}` : 'AI');
+        // On the box, so a symbolic icon is tinted with the label.
+        this._box.style_class = `panel-status-indicators-box ai-usage-${severity}`;
+
+        const {buttonLabel, buttonIcon, showPercent} = this._options;
+        const iconPath = buttonLabel === 'icon' ? buttonIcon : '';
+        if (iconPath !== this._iconPath) {
+            this._iconPath = iconPath;
+            this._icon.gicon = iconPath ? new Gio.FileIcon({file: Gio.File.new_for_path(iconPath)}) : null;
+        }
+        this._icon.visible = !!iconPath;
+
+        // "AI" stands in for a plan not known yet, an icon not chosen, or an empty button.
+        const name = {ai: 'AI', plan: row.reading?.plan ?? 'AI', icon: iconPath ? null : 'AI'}[buttonLabel];
+        const percent = row.figure && showPercent ? formatPercent(row.figure.percent) : null;
+        const text = [name, percent].filter(Boolean).join(' ') || (iconPath ? '' : 'AI');
+        this._label.text = text;
+        this._label.visible = !!text;
     }
 
     // The tabs are rebuilt only when the providers shown change, so a redraw
