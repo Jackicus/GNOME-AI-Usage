@@ -89,6 +89,12 @@ the debug log on (`lib/log.js`'s `setVerbose`).
   login changing on disk (file monitor, 2 s debounce) or in the secret service and opening a pop-up —
   which re-reads only if the figures are over a minute old. The refresh button
   always reads, every provider.
+* **A failed read keeps the last good figures** (`keptReading()`): a read that
+  comes back `UNAVAILABLE` (no network, a 5xx, a 429, an unknown shape) leaves the
+  tab and the button on the last `OK` reading, under a line saying why it could
+  not update and when the figures are from; a window that has reset since is
+  dropped, and with none left the failure shows. An expired login is never kept
+  over. `Gio.NetworkMonitor` coming back reads again while any tab is failing.
 * Notifications fire once per limit per window, keyed by reset time (rounded to
   the minute by `parseTimestamp()`). The app holds that record, so a disable
   (a screen lock too) forgets it and a limit still past the line notifies once

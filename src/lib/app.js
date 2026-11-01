@@ -7,7 +7,7 @@ import {Http} from './http.js';
 import {UsageIndicator} from './indicator.js';
 import {PROVIDERS} from './providers/registry.js';
 import {applyOptions, providerSettings} from './settings.js';
-import {Status, formatReset, fullLabel} from './usage.js';
+import {Status, formatReset, fullLabel, keptReading} from './usage.js';
 import * as Log from './log.js';
 
 // A scheduled poll is skipped after this long without input.
@@ -25,7 +25,7 @@ export class AiUsageApp {
         this._settings = extension.getSettings();
 
         this._http = null;
-        // provider id -> {provider, settings, handlerId, live, reading, renewed, renewing}, in registry order
+        // provider id -> {provider, settings, handlerId, live, reading, good, renewed, renewing}, in registry order
         this._providers = new Map();
         this._indicator = null;
         this._notified = new Map();   // limit key -> the resets_at (unix seconds) it was notified for
@@ -33,6 +33,7 @@ export class AiUsageApp {
         this._settingsId = 0;
         this._interface = null;
         this._interfaceId = 0;
+        this._networkId = 0;
         this._timerId = 0;
         this._debounceId = 0;
         this._cancellable = null;
@@ -55,8 +56,8 @@ export class AiUsageApp {
             });
             // A copy per enable, so whatever a provider caches goes with disable().
             this._providers.set(provider.id,
-                {provider: Object.create(provider), settings, handlerId, live: false, reading: null, renewed: false,
-                    renewing: false});
+                {provider: Object.create(provider), settings, handlerId, live: false, reading: null, good: null,
+                    renewed: false, renewing: false});
         }
 
         this._settingsId = this._settings.connect('changed', (_s, key) => {
@@ -71,6 +72,11 @@ export class AiUsageApp {
         });
         this._interface = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
         this._interfaceId = this._interface.connect('changed::clock-format', () => this._redraw());
+        // A resume reads before the network is back; read again once it is.
+        this._networkId = Gio.NetworkMonitor.get_default().connect('network-changed', (_m, available) => {
+            if (available && this._live().some(e => e.reading && (!e.reading.ok || e.reading.failed)))
+                this._refreshSoon();
+        });
 
         this._syncProviders();
         this.refresh();
@@ -84,6 +90,7 @@ export class AiUsageApp {
         this._settings.disconnect(this._settingsId);
         this._interface.disconnect(this._interfaceId);
         this._interface = null;
+        Gio.NetworkMonitor.get_default().disconnect(this._networkId);
 
         for (const {settings, handlerId} of this._providers.values())
             settings.disconnect(handlerId);
@@ -114,8 +121,10 @@ export class AiUsageApp {
                 Log.debug(`'${provider.cli}' is not installed; leaving ${provider.id} out.`);
                 entry.live = false;
             }
-            if (!entry.live)
+            if (!entry.live) {
                 entry.reading = null;
+                entry.good = null;
+            }
         }
 
         const live = this._live();
@@ -181,10 +190,14 @@ export class AiUsageApp {
                 return;
 
             entry.reading = reading;
-            if (reading.ok)
+            if (reading.ok) {
+                entry.good = reading;
                 entry.renewed = false;
-            else if (reading.status === Status.EXPIRED)
+            } else if (reading.status === Status.UNAVAILABLE && entry.good) {
+                entry.reading = keptReading(entry.good, reading) ?? reading;
+            } else if (reading.status === Status.EXPIRED) {
                 this._renewLogin(entry, renew);
+            }
             this._redraw();
             // From the untouched readings: a hidden limit still notifies.
             this._maybeNotify();

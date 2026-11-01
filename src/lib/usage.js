@@ -44,6 +44,7 @@ export class Reading {
         this.message = message;
         this.expiredAt = expiredAt; // GLib.DateTime, when a login is known to have lapsed
         this.at = GLib.DateTime.new_now_utc();
+        this.failed = null;         // why the figures could not be updated, on kept ones
     }
 
     get ok() {
@@ -63,6 +64,18 @@ export class Reading {
         return ids.map(id => this.limits.find(l => l.id === id)).find(Boolean) ??
             worstOf(this.limits.filter(l => !l.scoped)) ?? this.worst;
     }
+}
+
+// The last good figures, through a read that failed for a passing reason, without
+// the windows that have reset since. Null when none are left.
+export function keptReading(good, failure) {
+    const now = GLib.DateTime.new_now_utc();
+    const limits = good.limits.filter(limit => !limit.resetsAt || limit.resetsAt.compare(now) > 0);
+    if (!limits.length)
+        return null;
+    const kept = Object.assign(Object.create(Reading.prototype), good, {limits});
+    kept.failed = failure.message ?? 'the service did not answer';
+    return kept;
 }
 
 function worstOf(limits) {

@@ -9,7 +9,9 @@ import {AntigravityProvider, planFrom, tokenFrom} from '../src/lib/providers/ant
 import {parseTimestamp} from '../src/lib/providers/common.js';
 import {ClaudeProvider, planLabel, readAccountTier} from '../src/lib/providers/claude.js';
 import {CodexProvider, keyringAccount} from '../src/lib/providers/codex.js';
-import {ResetFormat, Status, formatBreakdown, formatPercent, formatReset, formatTime, fullLabel} from '../src/lib/usage.js';
+import {
+    Limit, Reading, ResetFormat, Status, formatBreakdown, formatPercent, formatReset, formatTime, fullLabel, keptReading,
+} from '../src/lib/usage.js';
 
 const THRESHOLDS = {warn: 80, critical: 95};
 const EVERYTHING = {showPerModel: true, showBreakdown: true, showCredits: true};
@@ -566,6 +568,28 @@ print('\n\x1b[1mCodex\x1b[0m — reading its login, with a stub for the network'
 
     file.delete(null);
     Gio.File.new_for_path(home).delete(null);
+}
+
+print('\n\x1b[1mA failed read\x1b[0m — the last good figures stay, without the windows reset since');
+{
+    const now = GLib.DateTime.new_now_utc();
+    const good = new Reading({providerId: 'claude', displayName: 'Claude', status: Status.OK, plan: 'Max', limits: [
+        new Limit({id: 'session', label: '5-hour limit', percent: 40, resetsAt: now.add_minutes(-5)}),
+        new Limit({id: 'weekly_all', label: 'Weekly', percent: 60, resetsAt: now.add_days(2)}),
+    ]});
+    const failed = new Reading({providerId: 'claude', displayName: 'Claude', status: Status.UNAVAILABLE,
+        message: 'the service could not be reached'});
+
+    const kept = keptReading(good, failed);
+    check('the figures are kept as a good reading', kept.ok, true);
+    check('without the window that has reset', kept.limits.map(l => l.id).join(), 'weekly_all');
+    check('so the button falls back to the week', kept.primary('session').id, 'weekly_all');
+    check('saying why they were not updated', kept.failed, 'the service could not be reached');
+    check('and from when', kept.at.equal(good.at), true);
+    check('through the display switches', drawn(kept).failed, 'the service could not be reached');
+    check('the good reading is left alone', good.failed, null);
+    good.limits.pop();
+    check('nothing left to keep is the failure', keptReading(good, failed), null);
 }
 
 // An unreadable response must degrade, never throw: a provider that throws
