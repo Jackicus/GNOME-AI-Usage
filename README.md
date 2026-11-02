@@ -3,13 +3,14 @@
 Shows how much of your AI subscriptions' rate limits you have used, and what your local
 Ollama models did this session, as a button in the GNOME Shell top bar.
 
-![The pop-up under the top-bar button reading "AI 12%", with tabs for Claude, Codex, Antigravity and Ollama and
+![The pop-up under the top-bar button reading "Max 12%", just after the workspaces, with tabs for Claude, Codex, Antigravity and Ollama and
 Claude's limits, each with a bar and its reset time, listed below.](docs/screenshots/pop-up.png)
 
 ## What it does
 
-- **One button** showing the selected subscription's figure beside "AI", its plan name, an
-  image of your choosing or nothing, amber at 80% and red at 95%.
+- **One button**, just after the workspaces at the left of the top bar, showing the selected
+  subscription's figure beside its plan name, an image of your choosing or nothing, amber at
+  80% and red at 95%.
 - **A tab per subscription** listing the session, the week and each model, with the time
   each resets.
 - **The provider's own figures**, the same ones its command-line tool shows.
