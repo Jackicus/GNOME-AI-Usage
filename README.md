@@ -3,7 +3,7 @@
 Shows how much of your AI subscriptions' rate limits you have used, and what your local
 Ollama models did this session, as a button in the GNOME Shell top bar.
 
-![The pop-up under the top-bar button reading "Max 12%", just after the workspaces,, with tabs for Claude, Codex, Antigravity and Ollama and
+![The pop-up under the top-bar button reading "Max 12%", just after the workspaces, with tabs for Claude, Codex, Antigravity and Ollama and
 Claude's limits, each with a bar and its reset time, listed below.](docs/screenshots/pop-up.png)
 
 ## What it does
