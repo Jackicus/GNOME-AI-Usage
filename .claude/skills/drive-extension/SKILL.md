@@ -10,8 +10,8 @@ steps and its settings are there. This is what is particular to AI Usage.
 
 ```bash
 ./scripts/nested.sh start --stand-in --headless   # ACTIVE when it returns
-./scripts/nested.sh click 1368 16                 # open the pop-up (1600x900, one monitor)
-./scripts/nested.sh shot $S/pop-up.png 1000 0 600 600
+./scripts/nested.sh click 117 16                  # open the pop-up (1600x900, one monitor)
+./scripts/nested.sh shot $S/pop-up.png 0 0 600 600
 ./scripts/nested.sh stop
 ```
 
@@ -24,9 +24,9 @@ steps and its settings are there. This is what is particular to AI Usage.
   replaced by `./scripts/stand-in-http.js`, which answers with invented figures. A
   provider added without an answer there shows as unavailable. `reload` re-stages `src/`
   with it (`nested_stand_in_stage`); the logins are made once per start.
-- **Where it is**: the `AI` button at the right of the top bar, about (1368, 16) on the
-  default monitor while the input session's recording indicator is in the bar (it shifts
-  everything left of it). The pop-up opens below it, tabs at the top by default.
+- **Where it is**: the button reading `Max 12%` (Claude's stand-in plan) just after the
+  workspaces at the left of the top bar, about (117, 16) on the default monitor. The pop-up
+  opens below it, tabs at the top by default.
 - **States**: `./scripts/nested.sh state PROVIDER STATE` (`claude`, `codex`,
   `antigravity`, `ollama`; `ok`, `signed-out`, `lapsed`, `expired`, `unavailable`,
   `unreachable`, `unknown-shape`, `unsupported`; Ollama only `ok`, `unavailable` and
@@ -40,7 +40,7 @@ steps and its settings are there. This is what is particular to AI Usage.
   org.gnome.shell.extensions.ai-usage tab-position bottom`. The preferences:
   `./scripts/nested.sh run gnome-extensions prefs ai-usage@jackicus`, then `do "window FILE"`.
 
-- **The Ollama tab** is the fourth, about (1429, 68) once the pop-up is open. Its
+- **The Ollama tab** is the fourth, about (324, 68) once the pop-up is open. Its
   stand-in has four models: `example-coder:14b` in memory throughout, and
   `example-chat:8b` in memory only for the first 20 s after each enable or reload,
   so it shows as used earlier. Its session figures go to the real

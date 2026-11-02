@@ -11,14 +11,13 @@
 # the stand-in token file; the top bar is photographed after that.
 SHOTS_SETTLE=35
 
-# Click points on a 1600x900 monitor, measured while the driver's recording indicator is in the bar
-# (it shifts everything left of it; the pictures are taken by a later run, without it). A stale point
-# clicks the bar and photographs the wallpaper. Re-measure with 'start --stand-in --headless' and
-# 'do "click 1368 16" "shot FILE 0 0 1600 36"'.
-SHOTS_BUTTON="1368 16"
+# Click points on a 1600x900 monitor, the button in its default place after the workspaces. A stale
+# point clicks the bar and photographs the wallpaper. Re-measure with 'start --stand-in --headless' and
+# 'do "click 117 16" "shot FILE 0 0 700 360"'.
+SHOTS_BUTTON="117 16"
 # The pop-up's first tab (Claude) and its Ollama tab, the fourth.
-SHOTS_TAB_CLAUDE="1168 68"
-SHOTS_TAB_OLLAMA="1429 68"
+SHOTS_TAB_CLAUDE="68 68"
+SHOTS_TAB_OLLAMA="324 68"
 # The preferences window opens centred, so its tabs are at fixed points too.
 SHOTS_TAB_BUTTON="677 201"
 SHOTS_TAB_READINGS="799 201"
@@ -68,18 +67,18 @@ shots_take() {
 
     info "Photographing the top bar..."
     # Nothing is clicked first, so there is no recording indicator in this picture.
-    shots_do "shot $out/top-bar$suffix.png 1100 0 500 36" || return 1
+    shots_do "shot $out/top-bar$suffix.png 0 0 500 36" || return 1
     # The tighter crop the README opens with, taken from the shell so it can be regenerated. Dark only.
     if (( ! light )); then
-        shots_do "shot $out/top-bar-cropped.png 1320 0 280 28" || return 1
+        shots_do "shot $out/top-bar-cropped.png 0 0 280 28" || return 1
     fi
 
     info "Opening the pop-up..."
     shots_do "click $SHOTS_BUTTON" "wait 1.5" || return 1
     # The recording indicator outlives its process by a few seconds: still there at 4, gone by 6.
-    shots_do "wait 6" "shot $out/pop-up$suffix.png 1092 0 508 340" || return 1
+    shots_do "wait 6" "shot $out/pop-up$suffix.png 0 0 508 340" || return 1
     shots_do "click $SHOTS_TAB_OLLAMA" "wait 1" || return 1
-    shots_do "wait 6" "shot $out/pop-up-ollama$suffix.png 1092 0 508 390" || return 1
+    shots_do "wait 6" "shot $out/pop-up-ollama$suffix.png 0 0 508 390" || return 1
     # Back to the first tab, which the next run's pictures open on.
     shots_do "click $SHOTS_TAB_CLAUDE" "key Escape" || return 1
 

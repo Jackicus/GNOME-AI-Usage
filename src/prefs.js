@@ -50,7 +50,6 @@ export default class AiUsagePreferences extends ExtensionPreferences {
         shown.add(switchRow(settings, 'show-percent', 'Show the percentage',
             'With this off the button shows only its label, tinted by how much has been used.'));
         const label = comboRow(settings, 'button-label', 'Beside the percentage', [
-            ['ai', '“AI”'],
             ['plan', 'Plan name'],
             ['icon', 'An icon'],
             ['none', 'Nothing'],

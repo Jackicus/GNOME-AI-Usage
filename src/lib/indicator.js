@@ -107,7 +107,7 @@ class UsageIndicator extends PanelMenu.Button {
         this._icon.visible = !!iconPath;
 
         // "AI" stands in for a plan not known yet, an icon not chosen, or an empty button.
-        const name = {ai: 'AI', plan: row.reading?.plan ?? 'AI', icon: iconPath ? null : 'AI'}[buttonLabel];
+        const name = {plan: row.reading?.plan ?? 'AI', icon: iconPath ? null : 'AI'}[buttonLabel];
         const percent = row.figure && showPercent ? formatPercent(row.figure.percent) : null;
         const text = [name, percent].filter(Boolean).join(' ') || (iconPath ? '' : 'AI');
         this._label.text = text;

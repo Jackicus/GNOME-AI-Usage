@@ -68,12 +68,12 @@ the debug log on (`lib/log.js`'s `setVerbose`).
 
 ## How it behaves
 
-* **One button, `AI` and a percentage**, while a provider is live (`enabled` and
+* **One button, the plan name and a percentage**, while a provider is live (`enabled` and
   its CLI on `PATH`); the percentage is the selected tab's figure, picked by
   `primary-limit`, and tints the label by its severity. With no session limit
   (Claude Ultra) `session` takes the week across all models, never a per-model
-  row (`Reading.primary()`). `button-label` puts `AI` (default), the selected
-  provider's plan, the user's own image (`button-icon`, any format the image
+  row (`Reading.primary()`). `button-label` puts the selected provider's plan
+  (default), the user's own image (`button-icon`, any format the image
   loader reads) or nothing beside it; with nothing else to show it reads `AI`.
   **No provider logo or icon is shipped or used, and none will be** (README,
   Trademarks): the tabs carry the names, and an icon is only the user's file.
@@ -85,7 +85,8 @@ the debug log on (`lib/log.js`'s `setVerbose`).
   provider with no `OK` reading, or no reading yet, and the button with the last tab;
   it is still read, so it returns when the tool refreshes its login.
   `_syncProviders()` diffs against the live list, so toggling needs no restart.
-* Role `${uuid}`, placed in `panel-box` at `panel-index`; `_place()` rebuilds it
+* Role `${uuid}`, placed in `panel-box` at `panel-index` (default left, 1: after
+  the workspaces indicator, which keeps the corner); `_place()` rebuilds it
   to move it.
 * **Reading is lazy.** A timer (`poll-seconds`) is the fallback, skipped when
   the session has been idle for 10 minutes. The real triggers are the stored
