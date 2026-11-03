@@ -10,7 +10,7 @@ paths:
   dimmed reset, percentage in a fixed `min-width` cell, bar underneath. A tab row
   (top or bottom, `moveMenuItem()` in `setReadings()`) holds the providers as the
   shell's `button flat`, whose `:checked` look marks the open one, at equal widths
-  (the box's `homogeneous`) inside an outlined pill with no fill. The line below it
+  (the box's `homogeneous`) inside an outlined box with no fill, at the shell's own button corners. The line below it
   holds the selected plan, dimmed, and refresh as the shell's `icon-button flat` at
   its right end, dimmed on the icon (not the button, or the hover background dims
   too) and lit on hover/focus by `refreshButton()`. A click on a tab only writes
@@ -42,7 +42,7 @@ paths:
   `:last-child`.
 * Dimming is actor opacity (`DIM_OPACITY`).
 * **Its exception to the kit's colour rule**: the bar track's mid grey (also the
-  tab pill's outline) and GNOME's own warning/critical palette (Yellow 5 `#e5a50a`, Red 4 `#e01b24`) are
+  tab box's outline) and GNOME's own warning/critical palette (Yellow 5 `#e5a50a`, Red 4 `#e01b24`) are
   the only flat colours, since St names no warning colour. A normal bar is
   `-st-accent-color`. No foreground colour is hardcoded.
 * Paddings are px measured from the shell's own theme (`.popup-menu-item`,
