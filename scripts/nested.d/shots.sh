@@ -16,8 +16,8 @@ SHOTS_SETTLE=35
 # 'do "click 117 16" "shot FILE 0 0 700 360"'.
 SHOTS_BUTTON="117 16"
 # The pop-up's first tab (Claude) and its Ollama tab, the fourth.
-SHOTS_TAB_CLAUDE="68 68"
-SHOTS_TAB_OLLAMA="324 68"
+SHOTS_TAB_CLAUDE="82 72"
+SHOTS_TAB_OLLAMA="413 72"
 # The preferences window opens centred, so its tabs are at fixed points too.
 SHOTS_TAB_BUTTON="677 201"
 SHOTS_TAB_READINGS="799 201"
@@ -78,7 +78,7 @@ shots_take() {
     # The recording indicator outlives its process by a few seconds: still there at 4, gone by 6.
     shots_do "wait 6" "shot $out/pop-up$suffix.png 0 0 508 340" || return 1
     shots_do "click $SHOTS_TAB_OLLAMA" "wait 1" || return 1
-    shots_do "wait 6" "shot $out/pop-up-ollama$suffix.png 0 0 508 390" || return 1
+    shots_do "wait 6" "shot $out/pop-up-ollama$suffix.png 0 0 508 410" || return 1
     # Back to the first tab, which the next run's pictures open on.
     shots_do "click $SHOTS_TAB_CLAUDE" "key Escape" || return 1
 
