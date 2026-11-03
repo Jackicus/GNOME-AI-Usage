@@ -27,14 +27,18 @@
 }
 
 .ai-usage-tabs-box {
-    spacing: 8px;
+    spacing: 6px;
 }
 
+/* A pill around equal tabs, outlined in the bar track's grey, with no fill of its own. */
 .ai-usage-tabs {
-    spacing: 4px;
+    border: 1px solid rgba(127, 127, 127, 0.25);
+    border-radius: 999px;
+    padding: 3px;
+    spacing: 3px;
 }
 
-/* The shell's flat button, whose :checked look marks the open tab; a pill, as the icon buttons beside it. */
+/* The shell's flat button, whose :checked look marks the open tab. */
 .ai-usage-tab {
     border-radius: 999px;
     padding: 3px 12px;
@@ -134,11 +138,6 @@
 
 .ai-usage-installed-label {
     font-size: 0.95em;
-}
-
-/* The plan under a tab, or at the top when the tabs are at the bottom. */
-.ai-usage-plan {
-    padding-top: 6px;
 }
 
 /* With .popup-menu-content's 6px, the sides' 18px. Last, to outweigh the row's own padding. */

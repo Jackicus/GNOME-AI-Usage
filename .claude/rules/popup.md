@@ -9,16 +9,17 @@ paths:
 * The pop-up's rows copy Claude Code's `/usage`: name (the one expanding column),
   dimmed reset, percentage in a fixed `min-width` cell, bar underneath. A tab row
   (top or bottom, `moveMenuItem()` in `setReadings()`) holds the providers as the
-  shell's `button flat`, whose `:checked` look marks the open one, and refresh as
-  the shell's `icon-button flat` at its right end, dimmed on the icon (not the
-  button, or the hover background dims too) and lit on hover/focus by
-  `refreshButton()`. A click on a tab only writes `selected-provider`; everything
-  redraws from the setting. The tabs are rebuilt only when the providers shown change,
-  so a redraw does not take the keyboard focus off one.
+  shell's `button flat`, whose `:checked` look marks the open one, at equal widths
+  (the box's `homogeneous`) inside an outlined pill with no fill. The line below it
+  holds the selected plan, dimmed, and refresh as the shell's `icon-button flat` at
+  its right end, dimmed on the icon (not the button, or the hover background dims
+  too) and lit on hover/focus by `refreshButton()`. A click on a tab only writes
+  `selected-provider`; everything redraws from the setting. The tabs are rebuilt
+  only when the providers shown change, so a redraw does not take the keyboard
+  focus off one.
 * The menu has a fixed `width`, wide enough for the longest label, so
-  it does not move when another tab is chosen. The plan is a dimmed caption row
-  above the limits. A limit with a `group` (Antigravity's window) gets a dimmed
-  heading row above the first of its run, and its own label names only the rest.
+  it does not move when another tab is chosen. A limit with a `group`
+  (Antigravity's window) gets a dimmed heading row above the first of its run, and its own label names only the rest.
 * The bars are the shell's `BarLevel`, drawn from `-barlevel-*` properties on
   `.ai-usage-bar` and its severity class. It reads `-barlevel-overdrive-color`
   too, so that is set though never drawn. A row whose `percent` is null (credits
@@ -34,8 +35,8 @@ paths:
 * The last pop-up row is marked `ai-usage-last` by `_renderMenu()`, for want of
   `:last-child`.
 * Dimming is actor opacity (`DIM_OPACITY`).
-* **Its exception to the kit's colour rule**: the bar track's mid grey and
-  GNOME's own warning/critical palette (Yellow 5 `#e5a50a`, Red 4 `#e01b24`) are
+* **Its exception to the kit's colour rule**: the bar track's mid grey (also the
+  tab pill's outline) and GNOME's own warning/critical palette (Yellow 5 `#e5a50a`, Red 4 `#e01b24`) are
   the only flat colours, since St names no warning colour. A normal bar is
   `-st-accent-color`. No foreground colour is hardcoded.
 * Paddings are px measured from the shell's own theme (`.popup-menu-item`,

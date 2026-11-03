@@ -40,7 +40,7 @@ steps and its settings are there. This is what is particular to AI Usage.
   org.gnome.shell.extensions.ai-usage tab-position bottom`. The preferences:
   `./scripts/nested.sh run gnome-extensions prefs ai-usage@jackicus`, then `do "window FILE"`.
 
-- **The Ollama tab** is the fourth, about (324, 68) once the pop-up is open. Its
+- **The Ollama tab** is the fourth, about (413, 72) once the pop-up is open. Its
   stand-in has four models: `example-coder:14b` in memory throughout, and
   `example-chat:8b` in memory only for the first 20 s after each enable or reload,
   so it shows as used earlier. Its session figures go to the real

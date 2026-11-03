@@ -64,7 +64,14 @@ class UsageIndicator extends PanelMenu.Button {
         this._tabIds = '';
 
         this._tabs = new St.BoxLayout({style_class: 'ai-usage-tabs', x_expand: true});
-        this._tabsItem = tabsItem(this._tabs, refresh);
+        this._tabs.layout_manager.homogeneous = true;
+        this._plan = new St.Label({
+            style_class: 'ai-usage-caption',
+            x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER,
+            opacity: DIM_OPACITY,
+        });
+        this._tabsItem = tabsItem(this._tabs, this._plan, refresh);
         this._section = new PopupMenu.PopupMenuSection();
         this.menu.addMenuItem(this._tabsItem);
         this.menu.addMenuItem(this._section);
@@ -122,7 +129,12 @@ class UsageIndicator extends PanelMenu.Button {
             this._tabIds = ids;
             this._tabs.destroy_all_children();
             for (const row of this._rows) {
-                const tab = new St.Button({label: row.name, style_class: 'button flat ai-usage-tab', can_focus: true});
+                const tab = new St.Button({
+                    label: row.name,
+                    style_class: 'button flat ai-usage-tab',
+                    can_focus: true,
+                    x_expand: true,
+                });
                 tab.connect('clicked', () => this._select(row.id));
                 this._tabs.add_child(tab);
             }
@@ -138,6 +150,7 @@ class UsageIndicator extends PanelMenu.Button {
         this._section.removeAll();
 
         const {reading} = this._selected;
+        this._plan.text = reading?.plan ?? '';
         if (reading)
             this._addReading(reading, this._options);
         else
@@ -147,12 +160,6 @@ class UsageIndicator extends PanelMenu.Button {
     }
 
     _addReading(reading, {resetFormat, clock}) {
-        if (reading.plan) {
-            const plan = captionItem(reading.plan);
-            plan.add_style_class_name('ai-usage-plan');
-            this._section.addMenuItem(plan);
-        }
-
         if (!reading.ok) {
             this._section.addMenuItem(captionItem(explain(reading, clock)));
             return;
@@ -230,13 +237,22 @@ function inertItem(styleClass) {
     return new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false, style_class: styleClass});
 }
 
-function tabsItem(tabs, refresh) {
+// The tabs across the top, the plan and refresh on the line below.
+function tabsItem(tabs, plan, refresh) {
     const item = inertItem('ai-usage-tabs-row');
-    const row = new St.BoxLayout({style_class: 'ai-usage-tabs-box', x_expand: true});
-    row.add_child(tabs);
-    row.add_child(refreshButton(refresh));
+    const column = new St.BoxLayout({
+        style_class: 'ai-usage-tabs-box',
+        orientation: Clutter.Orientation.VERTICAL,
+        x_expand: true,
+    });
+    column.add_child(tabs);
 
-    item.add_child(row);
+    const line = new St.BoxLayout({x_expand: true});
+    line.add_child(plan);
+    line.add_child(refreshButton(refresh));
+    column.add_child(line);
+
+    item.add_child(column);
     return item;
 }
 
