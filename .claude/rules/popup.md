@@ -18,8 +18,14 @@ paths:
   only when the providers shown change, so a redraw does not take the keyboard
   focus off one.
 * The menu has a fixed `width`, wide enough for the longest label, so
-  it does not move when another tab is chosen. A limit with a `group`
-  (Antigravity's window) gets a dimmed heading row above the first of its run, and its own label names only the rest.
+  it does not move when another tab is chosen.
+* **A card per window** (`cardItem()`): the limits sharing a `group` (`Session`,
+  `Weekly`, `Monthly`, `Daily`, or an unknown window's own name), in the order
+  each first appears, under the group as its title; a limit with no group, and
+  the credits, get a card with no title. The card is the calendar's events card,
+  the theme's own `events-button` > `events-box` > `events-title`, and is
+  reactive, since St makes a non-reactive widget `:insensitive`, which the theme
+  greys out. A row's label names only what it covers (`All models`, a model).
 * The bars are the shell's `BarLevel`, drawn from `-barlevel-*` properties on
   `.ai-usage-bar` and its severity class. It reads `-barlevel-overdrive-color`
   too, so that is set though never drawn. A row whose `percent` is null (credits

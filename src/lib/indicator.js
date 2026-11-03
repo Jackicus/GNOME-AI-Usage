@@ -175,16 +175,15 @@ class UsageIndicator extends PanelMenu.Button {
             return;
         }
 
-        let group = null;
-        for (const limit of reading.limits) {
-            if (limit.group && limit.group !== group)
-                this._section.addMenuItem(headingItem(limit.group));
-            group = limit.group;
-            this._section.addMenuItem(limitItem(limit, resetFormat, clock));
+        // A card per window, in the order each first appears.
+        const cards = Map.groupBy(reading.limits, limit => limit.group ?? limit.id);
+        for (const limits of cards.values()) {
+            this._section.addMenuItem(cardItem(limits[0].group,
+                limits.map(limit => limitRow(limit, resetFormat, clock))));
         }
 
         if (reading.credits)
-            this._section.addMenuItem(limitItem(reading.credits, resetFormat, clock));
+            this._section.addMenuItem(cardItem(null, [limitRow(reading.credits, resetFormat, clock)]));
 
         const breakdown = formatBreakdown(reading.breakdown);
         if (breakdown)
@@ -258,8 +257,7 @@ function tabsItem(tabs, plan, refresh) {
 
 // Name, dimmed reset, percentage, bar underneath, as Claude Code's /usage. A row with no
 // percentage has no figure and no bar: an empty bar would claim a 0% the service never said.
-function limitItem(limit, resetFormat, clock) {
-    const item = inertItem('ai-usage-limit');
+function limitRow(limit, resetFormat, clock) {
     const column = new St.BoxLayout({
         orientation: Clutter.Orientation.VERTICAL,
         x_expand: true,
@@ -286,9 +284,8 @@ function limitItem(limit, resetFormat, clock) {
         }));
     }
     column.add_child(top);
-    item.add_child(column);
     if (limit.percent === null)
-        return item;
+        return column;
 
     // A box, not an St.Bin, which would centre the figure.
     const figure = new St.Label({
@@ -306,6 +303,24 @@ function limitItem(limit, resetFormat, clock) {
         value: limit.percent / 100,
         style_class: `ai-usage-bar ai-usage-${limit.severity}`,
     }));
+    return column;
+}
+
+// The calendar's events card, so it takes the shell's own look in every theme. Reactive,
+// as that one is: St marks a widget that is not :insensitive, which the theme greys out.
+function cardItem(title, rows) {
+    const item = inertItem('ai-usage-card-row');
+    const card = new St.BoxLayout({style_class: 'events-button ai-usage-card', reactive: true, x_expand: true});
+    const box = new St.BoxLayout({
+        style_class: 'events-box',
+        orientation: Clutter.Orientation.VERTICAL,
+        x_expand: true,
+    });
+    if (title)
+        box.add_child(new St.Label({text: title, style_class: 'events-title'}));
+    rows.forEach(row => box.add_child(row));
+    card.add_child(box);
+    item.add_child(card);
     return item;
 }
 

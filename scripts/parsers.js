@@ -63,9 +63,9 @@ print('\x1b[1mClaude\x1b[0m — tests/fixtures/claude-usage.json');
     check('severity from the response (warning)', drawn(reading).limits[1].severity, 'warning');
     check('severity from the response (critical)', drawn(reading).limits[2].severity, 'critical');
     // Claude Code's own words for these rows.
-    check('session row takes Claude Code\'s words', reading.limits[0].label, '5-hour limit');
-    check('the weekly row too', reading.limits[1].label, 'Weekly · all models');
-    check('per-model row is labelled', reading.limits[2].label, 'Weekly · Fable');
+    check('session row in the Session card', fullLabel(reading.limits[0]), 'Session · All models');
+    check('the weekly row in the Weekly card', fullLabel(reading.limits[1]), 'Weekly · All models');
+    check('per-model row is labelled', fullLabel(reading.limits[2]), 'Weekly · Fable');
     check('per-model row is marked scoped', reading.limits[2].scoped, true);
     check('whole-account row is not scoped', reading.limits[1].scoped, false);
     check('reset time parsed', reading.limits[0].resetsAt?.format_iso8601(), '2026-09-30T18:10:00Z');
@@ -78,14 +78,14 @@ print('\x1b[1mClaude\x1b[0m — tests/fixtures/claude-usage.json');
     check('worst limit is the highest', formatPercent(reading.worst.percent), '97%');
     check('the button\'s session figure', reading.primary('session').id, 'session');
     check('its weekly figure', reading.primary('weekly').id, 'weekly_all');
-    check('its highest figure, per-model or not', reading.primary('highest').label, 'Weekly · Fable');
+    check('its highest figure, per-model or not', fullLabel(reading.primary('highest')), 'Weekly · Fable');
 
     // A verified Ultra account has no session limit: the week across all models stands in, not Fable's.
     const body = fixture('claude-usage.json');
     const ultra = ClaudeProvider._parse({...body, limits: body.limits.filter(l => l.kind !== 'session')}, {});
-    check('no session row: the all-models week', ultra.primary('session').label, 'Weekly · all models');
+    check('no session row: the all-models week', fullLabel(ultra.primary('session')), 'Weekly · All models');
     const fableOnly = ClaudeProvider._parse({...body, limits: body.limits.filter(l => l.kind === 'weekly_scoped')}, {});
-    check('only a per-model row: that one', fableOnly.primary('session').label, 'Weekly · Fable');
+    check('only a per-model row: that one', fullLabel(fableOnly.primary('session')), 'Weekly · Fable');
 }
 
 // ~/.claude.json is the copy of the plan Claude Code refreshes; the credentials' tier is stale after a plan
@@ -243,11 +243,11 @@ print('\n\x1b[1mCodex\x1b[0m — tests/fixtures/codex-usage.json  \x1b[2m(paid p
     check('status', reading.status, Status.OK);
     check('plan label from plan_type', reading.plan, 'Plus');
     check('limits found', reading.limits.length, 3);
-    check('5h window named from its length', reading.limits[0].label, 'Current session');
-    check('7d window named from its length', reading.limits[1].label, 'This week');
+    check('5h window named from its length', fullLabel(reading.limits[0]), 'Session · All models');
+    check('7d window named from its length', fullLabel(reading.limits[1]), 'Weekly · All models');
     check('primary percent', formatPercent(reading.limits[0].percent), '50%');
     check('severity derived from percent', drawn(reading).limits[1].severity, 'warning');
-    check('per-model row labelled by model', reading.limits[2].label, 'Current session · gpt-5-codex');
+    check('per-model row labelled by model', fullLabel(reading.limits[2]), 'Session · gpt-5-codex');
     check('per-model row is marked scoped', reading.limits[2].scoped, true);
     check('whole-account row is not scoped', reading.limits[0].scoped, false);
     check('epoch reset converted', reading.limits[0].resetsAt?.format_iso8601(), '2033-05-18T03:33:20Z');
@@ -272,7 +272,7 @@ print('\n\x1b[1mCodex\x1b[0m — tests/fixtures/codex-usage-free.json  \x1b[2m(f
     check('status', reading.status, Status.OK);
     check('plan label from plan_type', reading.plan, 'Free');
     check('the one 30-day window', reading.limits.length, 1);
-    check('named from its length', reading.limits[0].label, 'This month');
+    check('named from its length', fullLabel(reading.limits[0]), 'Monthly · All models');
     check('with an id of its own', reading.limits[0].id, 'monthly');
     check('percent', formatPercent(reading.limits[0].percent), '37%');
     check('epoch reset converted', reading.limits[0].resetsAt?.format_iso8601(), '2033-06-04T12:13:20Z');
@@ -337,9 +337,9 @@ print('\n\x1b[1mAntigravity\x1b[0m — tests/fixtures/antigravity-quota.json');
     check('weekly window labelled', reading.limits[2].label, 'Gemini Models');
     check('the other family keeps its own row', reading.limits[3].label, 'Claude and GPT models');
     check('Gemini 4 Argon weekly window labelled', reading.limits[4].label, 'Gemini 4 Argon');
-    check('5h rows under one heading', reading.limits[1].group, 'Current session');
-    check('weekly rows under the next', reading.limits[4].group, 'Current week');
-    check('a notification names both', fullLabel(reading.limits[2]), 'Current week · Gemini Models');
+    check('5h rows under one heading', reading.limits[1].group, 'Session');
+    check('weekly rows under the next', reading.limits[4].group, 'Weekly');
+    check('a notification names both', fullLabel(reading.limits[2]), 'Weekly · Gemini Models');
     // The bucket's displayName is "Weekly Limit Remaining", which over a used figure would lie.
     check('the response label is NOT reused', reading.limits[2].label.includes('Remaining'), false);
     check('an exhausted bucket is critical', drawn(reading).limits[2].severity, 'critical');
@@ -385,7 +385,7 @@ print('\n\x1b[1mHostile shapes\x1b[0m — a wrong number is worse than no number
     }, {});
     check('claude drops a null percent', claude.limits.length, 2);
     check('claude keeps the real one', formatPercent(claude.limits[0].percent), '42%');
-    check('a surface-scoped row is named', claude.limits[1].label, 'Weekly · Cowork');
+    check('a surface-scoped row is named', fullLabel(claude.limits[1]), 'Weekly · Cowork');
     check('and counts as scoped, so it can be hidden', claude.limits[1].scoped, true);
 
     const credits = ClaudeProvider._parse({
@@ -459,7 +459,7 @@ print('\n\x1b[1mClaude\x1b[0m — money, unknown kinds and bad times');
         spend: {percent: 10, used: {amount_minor: 1234, currency: 'EUR', exponent: 2}},
     }, {});
     check('minor units in the currency\'s exponent', spent.credits.label, `Extra usage · ${inCurrency(12.34, 'EUR', 2)} used`);
-    check('an unknown kind is named from itself', spent.limits[1].label, 'Weekly opus extra');
+    check('an unknown kind is a card of its own', spent.limits[1].group, 'Weekly opus extra');
     check('and listed after the known ones', spent.limits[1].id, 'weekly_opus_extra');
     check('a reset that is not a time is none', spent.limits[0].resetsAt, null);
     const yen = ClaudeProvider._parse({
@@ -491,7 +491,7 @@ print('\n\x1b[1mCodex\x1b[0m — the shapes a free or odd account sends');
         additional_rate_limits: [{limit_name: 'no windows'}, {limit_name: 'gpt-x', rate_limit: null}],
     }, {plan: 'Pro'});
     check('a model entry with no rate_limit adds no row', odd.limits.length, 1);
-    check('a window of no stated length', odd.limits[0].label, 'Current limit');
+    check('a window of no stated length', odd.limits[0].group, 'Current limit');
     check('plan_type "unknown" leaves the login\'s plan', odd.plan, 'Pro');
 }
 

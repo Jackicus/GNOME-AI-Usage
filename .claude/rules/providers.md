@@ -17,8 +17,8 @@ request Claude Code's own `/usage` makes, so the button and the terminal agree.
 The header is not currently required; it is sent to look exactly like the tool.
 
 The useful part is `limits[]`: one row per limit with `percent`, `severity`,
-`resets_at` and `scope.model` on per-model rows; an unknown `kind` is shown under a
-label made from its name. The older top-level `five_hour`/`seven_day` fields are not
+`resets_at` and `scope.model` on per-model rows; an unknown `kind` is a card of its
+own, titled from its name. The older top-level `five_hour`/`seven_day` fields are not
 read. `seven_day_breakdown` says where the week went;
 `extra_usage`/`spend` are paid credits — when disabled, a `percent: null` credits
 entry drawn as an "Extra usage · off" line with no bar.
@@ -78,8 +78,8 @@ made per enable) then `retrieveUserQuotaSummary`.
 * **The response says what is LEFT**; everything else here shows USED. Its own
   "Weekly Limit Remaining" label would lie over the inverted figure, so a row is
   labelled by its model family (`Gemini Models`, `Claude and GPT models`,
-  `Gemini 4 Argon`) under its window as the limit's `group` (`Current session`,
-  `Current week`), drawn once as a heading; a notification names both
+  `Gemini 4 Argon`) under its window as the limit's `group` (`Session`,
+  `Weekly`), the title of its card; a notification names both
   (`fullLabel()`). Disabled buckets (`disabled: true`) and buckets without a
   `remainingFraction` are dropped. A parser check pins 0, 1, 0.35 and 0.8027764.
 * **Its bucket ids are the service's** (`gemini-5h`, `3p-5h`, `gemini-weekly`,
@@ -92,7 +92,7 @@ made per enable) then `retrieveUserQuotaSummary`.
 `GET https://chatgpt.com/backend-api/wham/usage` with the access token and
 `ChatGPT-Account-ID` from `$CODEX_HOME/auth.json` (default `~/.codex/`), as
 Codex's `/status` does. Verified on a free-plan account (codex-cli 0.160.0,
-2026-10-02): its only window is 30 days (`primary_window`, `This month`),
+2026-10-02): its only window is 30 days (`primary_window`, `Monthly`),
 `secondary_window` and `additional_rate_limits` are null. The 5-hour and weekly
 windows of the paid plans are known only from openai/codex's source
 (`codex-usage.json`). Windows carry no name and are told apart by
@@ -164,7 +164,9 @@ Re-run that probe before changing a command or after a CLI major version.
 1. Find the request the CLI makes for its own usage command (`strings` over the
    binary, grepped for `usage`/`limit`, is how `/api/oauth/usage` was found),
    and where the tool stores its login.
-2. Write `src/lib/providers/<id>.js` mapping the response onto `Limit`s, using
+2. Write `src/lib/providers/<id>.js` mapping the response onto `Limit`s, each
+   with its window as `group` (`Session`, `Weekly`, …) and what it covers as
+   `label` (`All models`, a model's name), using
    `common.js` (Readings, login files, labels, timestamps, failures) and
    `stringOrNull`/`numberOrNull` from `usage.js` for outside data.
    The provider is an object: `id` (the settings path and its tab),

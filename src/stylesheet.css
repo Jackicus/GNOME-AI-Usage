@@ -44,6 +44,16 @@
     padding: 3px 12px;
 }
 
+/* With the card's 4px margin, its edge lines up with the captions' text. */
+.ai-usage-card-row {
+    padding: 2px 8px;
+}
+
+/* Rows apart by .popup-menu-item's 9px, on top of the title's own 6px below it. */
+.ai-usage-card .events-box {
+    spacing: 9px;
+}
+
 /* .popup-menu-item's own 9px. */
 .ai-usage-limit {
     padding-top: 9px;

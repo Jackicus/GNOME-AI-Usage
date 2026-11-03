@@ -76,7 +76,7 @@ shots_take() {
     info "Opening the pop-up..."
     shots_do "click $SHOTS_BUTTON" "wait 1.5" || return 1
     # The recording indicator outlives its process by a few seconds: still there at 4, gone by 6.
-    shots_do "wait 6" "shot $out/pop-up$suffix.png 0 0 508 340" || return 1
+    shots_do "wait 6" "shot $out/pop-up$suffix.png 0 0 508 460" || return 1
     shots_do "click $SHOTS_TAB_OLLAMA" "wait 1" || return 1
     shots_do "wait 6" "shot $out/pop-up-ollama$suffix.png 0 0 508 410" || return 1
     # Back to the first tab, which the next run's pictures open on.

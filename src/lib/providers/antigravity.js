@@ -128,11 +128,11 @@ function limitFromBucket(group, bucket, sharedId) {
 function windowLabel(window) {
     switch (window) {
     case '5h':
-        return 'Current session';
+        return 'Session';
     case 'weekly':
-        return 'Current week';
+        return 'Weekly';
     case 'daily':
-        return 'Today';
+        return 'Daily';
     default:
         return 'Current limit';
     }
