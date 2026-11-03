@@ -14,9 +14,9 @@ const USER_AGENT = 'codex_cli_rs';
 // The response does not name its windows, so they are told apart by length. The
 // shared ids let primary-limit find them.
 const KNOWN_WINDOWS = [
-    {seconds: 5 * 60 * 60, tolerance: 60 * 60, id: 'session', label: 'Current session'},
-    {seconds: 7 * 24 * 60 * 60, tolerance: 12 * 60 * 60, id: 'weekly_all', label: 'This week'},
-    {seconds: 30 * 24 * 60 * 60, tolerance: 24 * 60 * 60, id: 'monthly', label: 'This month'},
+    {seconds: 5 * 60 * 60, tolerance: 60 * 60, id: 'session', group: 'Session'},
+    {seconds: 7 * 24 * 60 * 60, tolerance: 12 * 60 * 60, id: 'weekly_all', group: 'Weekly'},
+    {seconds: 30 * 24 * 60 * 60, tolerance: 24 * 60 * 60, id: 'monthly', group: 'Monthly'},
 ];
 
 export const CodexProvider = {
@@ -110,10 +110,10 @@ function pushWindow(limits, window, {fallbackId, scoped = false, modelName = nul
 
     const seconds = numberOrNull(window.limit_window_seconds);
     const known = KNOWN_WINDOWS.find(w => Math.abs(seconds - w.seconds) < w.tolerance);
-    const base = known?.label ?? windowLabel(seconds);
     limits.push(new Limit({
         id: !scoped && known ? known.id : fallbackId,
-        label: modelName ? `${base} · ${modelName}` : base,
+        label: modelName ?? 'All models',
+        group: known?.group ?? windowLabel(seconds),
         percent,
         resetsAt: resetTime(window),
         scoped,

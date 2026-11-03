@@ -18,7 +18,7 @@ export class Limit {
     constructor({id, label, percent, severity = Severity.NORMAL, resetsAt = null, scoped = false, group = null}) {
         this.id = id;
         this.label = label;
-        this.group = group;         // a heading shared with the rows beside it, drawn once above them
+        this.group = group;         // the window it belongs to: the heading of its card
         this.percent = Math.max(0, Math.min(100, percent));
         this.severity = severity;   // the service's own; applyOptions() adds the user's thresholds
         this.resetsAt = resetsAt;   // GLib.DateTime in UTC, or null when open-ended

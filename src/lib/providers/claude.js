@@ -15,10 +15,10 @@ const OAUTH_BETA = 'oauth-2025-04-20';
 // Listing order; an unknown kind is listed last under its own name.
 const KIND_ORDER = ['session', 'weekly_all', 'weekly_scoped'];
 
-// Claude Code's own words for these rows.
-const KIND_LABELS = {
-    session: '5-hour limit',
-    weekly_all: 'Weekly · all models',
+// The window each kind belongs to; an unknown kind is a window of its own.
+const KIND_GROUPS = {
+    session: 'Session',
+    weekly_all: 'Weekly',
     weekly_scoped: 'Weekly',
 };
 
@@ -77,19 +77,14 @@ function limitFromRow(row) {
 
     return new Limit({
         id: kind,
-        label: labelForRow(kind, row),
+        label: row.scope?.model?.display_name ?? row.scope?.surface?.display_name ?? 'All models',
+        group: KIND_GROUPS[kind] ?? humanise(kind),
         percent,
         severity: row.severity,
         resetsAt: parseTimestamp(row.resets_at),
         // Scoped by model or by surface: either way the per-model switch hides it.
         scoped: !!row.scope,
     });
-}
-
-function labelForRow(kind, row) {
-    const base = KIND_LABELS[kind] ?? humanise(kind);
-    const scope = row.scope?.model?.display_name ?? row.scope?.surface?.display_name;
-    return scope ? `${base} · ${scope}` : base;
 }
 
 function breakdownFrom(body) {

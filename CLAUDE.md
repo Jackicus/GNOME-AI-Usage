@@ -110,8 +110,8 @@ the debug log on (`lib/log.js`'s `setVerbose`).
   more after the unlock.
 * `reset-format` words resets in pop-ups and notifications alike, through
   `formatReset()` on the desktop's `clock-format`; `auto` matches Claude Code.
-  Claude's labels (`5-hour limit`, `Weekly · all models`) and plan names
-  (`Ultra`, `Max`) live in `claude.js`. The breakdown line shows only when two or
+  Claude's windows (`KIND_GROUPS`) and plan names (`Ultra`, `Max`) live in
+  `claude.js`. The breakdown line shows only when two or
   more surfaces are above zero (`breakdownFrom()` in `claude.js` drops the
   zeros, `formatBreakdown()` wants two rows).
 * How the pop-up is drawn, and its St workarounds: `.claude/rules/popup.md`.
