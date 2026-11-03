@@ -30,17 +30,17 @@
     spacing: 6px;
 }
 
-/* A pill around equal tabs, outlined in the bar track's grey, with no fill of its own. */
+/* A box around equal tabs, outlined in the bar track's grey, with no fill of its own.
+   Its corners sit concentric around the tabs' 8px (.button) at 3px in. */
 .ai-usage-tabs {
     border: 1px solid rgba(127, 127, 127, 0.25);
-    border-radius: 999px;
+    border-radius: 11px;
     padding: 3px;
     spacing: 3px;
 }
 
 /* The shell's flat button, whose :checked look marks the open tab. */
 .ai-usage-tab {
-    border-radius: 999px;
     padding: 3px 12px;
 }
 
