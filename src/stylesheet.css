@@ -83,14 +83,9 @@
     font-size: 0.95em;
 }
 
-/* The shell's padding for a slider row's end button, 2px less tall so the row does not grow. */
-.ai-usage-tabs-box .icon-button {
-    padding: 2px 6px;
-}
-
-/* 14px against .icon-button StIcon's 16px. */
-.ai-usage-tabs-box .icon-button StIcon {
-    icon-size: 0.955em;
+/* Room to hit, beyond the word, without the tabs row growing. */
+.ai-usage-refresh {
+    padding: 0 4px;
 }
 
 /* A BarLevel, as .slider draws one; 6px above is .popup-menu-item's spacing.
