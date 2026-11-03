@@ -212,18 +212,18 @@ class UsageIndicator extends PanelMenu.Button {
     }
 });
 
-// The shell's icon-button, dimmed on the icon so the hover background stays full; lit on hover and focus.
+// A plain word, no button background: dimmed like the plan beside it, lit on hover and focus.
 function refreshButton(refresh) {
-    const icon = new St.Icon({icon_name: 'view-refresh-symbolic', opacity: DIM_OPACITY});
     const button = new St.Button({
-        style_class: 'icon-button flat',
+        style_class: 'ai-usage-refresh',
         can_focus: true,
         accessible_name: 'Refresh now',
         y_align: Clutter.ActorAlign.CENTER,
-        child: icon,
+        opacity: DIM_OPACITY,
+        child: new St.Label({text: 'Refresh', style_class: 'ai-usage-caption'}),
     });
     const light = () => {
-        icon.opacity = button.hover || button.has_key_focus() ? 255 : DIM_OPACITY;
+        button.opacity = button.hover || button.has_key_focus() ? 255 : DIM_OPACITY;
     };
     button.connect('notify::hover', light);
     button.connect('key-focus-in', light);

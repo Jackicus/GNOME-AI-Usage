@@ -11,9 +11,9 @@ paths:
   (top or bottom, `moveMenuItem()` in `setReadings()`) holds the providers as the
   shell's `button flat`, whose `:checked` look marks the open one, at equal widths
   (the box's `homogeneous`) inside an outlined box with no fill, at the shell's own button corners. The line below it
-  holds the selected plan, dimmed, and refresh as the shell's `icon-button flat` at
-  its right end, dimmed on the icon (not the button, or the hover background dims
-  too) and lit on hover/focus by `refreshButton()`. A click on a tab only writes
+  holds the selected plan, dimmed, and `Refresh` as a plain word at its right end,
+  an `St.Button` with no button style class, so no background, dimmed and lit on
+  hover/focus by `refreshButton()`. A click on a tab only writes
   `selected-provider`; everything redraws from the setting. The tabs are rebuilt
   only when the providers shown change, so a redraw does not take the keyboard
   focus off one.
