@@ -23,9 +23,10 @@ own command-line tool has already stored, and does nothing else with it:
   refresh where the tool can renew it.
 * The tool's own `doctor` (`renewArgs`) is the one way past that: it refreshes
   the login as the tool starts, and the credentials watch reads the result. The
-  refresh button runs it for an expired login; `renew-login` (off by default)
-  runs it unasked, once per expiry. Never two runs at once per provider. The tool does the
-  refreshing, never this extension (`.claude/rules/providers.md`).
+  refresh button runs it for an expired login; `renew-login` (on by default;
+  the preferences offer it inverted, as "Wait until the tool is opened") runs
+  it unasked, once per expiry. Never two runs at once per provider. The tool
+  does the refreshing, never this extension (`.claude/rules/providers.md`).
 * Tokens are read fresh on every poll and never held — the tool rewrites the
   file when it refreshes, so a cached token is a stale one.
 * Nothing is ever written to a provider's files; no token is logged, ever.

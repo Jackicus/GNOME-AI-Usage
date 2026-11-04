@@ -132,12 +132,17 @@ export default class AiUsagePreferences extends ExtensionPreferences {
 
         const renew = new Adw.PreferencesGroup({
             title: 'Expired logins',
-            description: 'Claude Code and Codex renew their login only when they run, so after a few hours it '
-                + 'lapses until you have used the tool. The refresh button in the pop-up renews it either way.',
+            description: 'Claude Code and Codex renew their login only when they run, so after a few hours away, '
+                + 'as at login, it has lapsed. The extension then runs "claude doctor" or "codex doctor" once, which '
+                + 'makes the tool refresh it. Not available for Antigravity.',
         });
-        renew.add(switchRow(settings, 'renew-login', 'Renew an expired login',
-            'Runs "claude doctor" or "codex doctor" once each time the login expires, unasked, which makes the tool '
-            + 'refresh it. Not available for Antigravity.'));
+        const wait = new Adw.SwitchRow({
+            title: 'Wait until the tool is opened',
+            subtitle: 'Leaves an expired login until you next use Claude Code or Codex. '
+                + 'The refresh button in the pop-up still renews it.',
+        });
+        settings.bind('renew-login', wait, 'active', Gio.SettingsBindFlags.INVERT_BOOLEAN);
+        renew.add(wait);
         page.add(renew);
         return page;
     }
