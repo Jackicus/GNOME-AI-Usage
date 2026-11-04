@@ -54,9 +54,9 @@
         </key>
 
         <key name="renew-login" type="b">
-            <default>false</default>
+            <default>true</default>
             <summary>Renew an expired login by running the provider's tool</summary>
-            <description>Once per expiry, runs the tool's own claude doctor or codex doctor, which refreshes the login it stored. The extension never refreshes a token itself.</description>
+            <description>Once per expiry, runs the tool's own claude doctor or codex doctor, which refreshes the login it stored. Off, an expired login waits until the tool is next opened. The extension never refreshes a token itself.</description>
         </key>
 
         <key name="reset-format" enum="org.gnome.shell.extensions.ai-usage.reset-format">

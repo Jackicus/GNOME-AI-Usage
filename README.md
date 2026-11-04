@@ -20,8 +20,10 @@ Claude's limits below in cards like the calendar's, Session and Weekly, each row
   used.
 - **A failed reading keeps the last figures**, saying why they could not be updated and
   when they are from, and reads again when the network comes back.
-- **Refresh renews an expired login**: for Claude and Codex, the refresh button runs the
-  tool's own `doctor`, which refreshes the login.
+- **An expired login is renewed**: for Claude and Codex, once a login lapses (as it has by
+  the time you log in), the tool's own `doctor` runs once and refreshes it, so the figures
+  show before you have opened the tool. "Wait until the tool is opened" in the preferences
+  turns that off; the refresh button still renews it.
 - **An optional notification** when a limit passes a figure you choose.
 
 ## Providers
