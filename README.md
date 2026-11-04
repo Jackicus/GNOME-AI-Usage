@@ -13,6 +13,8 @@ Claude's limits below in cards like the calendar's, Session and Weekly, each row
   80% and red at 95%.
 - **A tab per subscription** listing the session, the week and each model, with the time
   each resets.
+- **A simple view**, if you prefer: one provider's session card, weekly card or both, and
+  nothing else in the pop-up.
 - **The provider's own figures**, the same ones its command-line tool shows.
 - **An Ollama tab** listing the local server's models: which are in memory (how much, on
   the GPU or the CPU, the context, when each unloads), and for each model used this

@@ -39,14 +39,14 @@ export default class AiUsagePreferences extends ExtensionPreferences {
 
         const shown = new Adw.PreferencesGroup({
             title: 'What it shows',
-            description: 'The pop-up always lists every limit. This is the single figure on the button itself, '
-                + 'for the provider whose tab is selected.',
+            description: 'The single figure on the button itself, for the provider whose tab is selected.',
         });
-        shown.add(comboRow(settings, 'primary-limit', 'Figure on the button', [
+        const figure = comboRow(settings, 'primary-limit', 'Figure on the button', [
             ['highest', 'Whichever is highest'],
             ['session', 'Current session'],
             ['weekly', 'This week'],
-        ]));
+        ]);
+        shown.add(figure);
         shown.add(switchRow(settings, 'show-percent', 'Show the percentage',
             'With this off the button shows only its label, tinted by how much has been used.'));
         const label = comboRow(settings, 'button-label', 'Beside the percentage', [
@@ -67,10 +67,40 @@ export default class AiUsagePreferences extends ExtensionPreferences {
             description: 'Every limit carries the time it resets, worded the same in the pop-up and in '
                 + 'notifications. An exact time is in your own timezone, on the clock your desktop is set to.',
         });
-        popup.add(comboRow(settings, 'tab-position', 'Provider tabs', [
+        const view = comboRow(settings, 'view-mode', 'View', [
+            ['default', 'Default'],
+            ['simple', 'Simple'],
+        ]);
+        view.subtitle = 'Simple is one provider\'s limits and nothing else.';
+        popup.add(view);
+        const provider = comboRow(settings, 'simple-provider', 'Provider',
+            PROVIDERS.map(p => [p.id, p.displayName]));
+        popup.add(provider);
+        const limits = comboRow(settings, 'simple-limits', 'Limits', [
+            ['session', 'Session'],
+            ['weekly', 'Weekly'],
+            ['all', 'All'],
+        ]);
+        limits.subtitle = 'Session or Weekly is also the figure on the button.';
+        popup.add(limits);
+        const tabs = comboRow(settings, 'tab-position', 'Provider tabs', [
             ['top', 'At the top'],
             ['bottom', 'At the bottom'],
-        ]));
+        ]);
+        popup.add(tabs);
+
+        // Ollama has no limits to choose from: its pop-up lists its models.
+        const syncView = () => {
+            const simple = settings.get_string('view-mode') === 'simple';
+            provider.visible = simple;
+            limits.visible = simple;
+            limits.sensitive = settings.get_string('simple-provider') !== 'ollama';
+            tabs.visible = !simple;
+            figure.sensitive = !simple || settings.get_string('simple-limits') === 'all';
+        };
+        syncView();
+        const viewId = settings.connect('changed', syncView);
+        page.connect('destroy', () => settings.disconnect(viewId));
         const reset = comboRow(settings, 'reset-format', 'Reset times', [
             ['auto', 'Automatic'],
             ['relative', 'Countdown'],

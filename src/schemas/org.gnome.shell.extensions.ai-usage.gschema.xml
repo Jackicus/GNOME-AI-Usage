@@ -19,6 +19,15 @@
         <value nick="top" value="0"/>
         <value nick="bottom" value="1"/>
     </enum>
+    <enum id="org.gnome.shell.extensions.ai-usage.view-mode">
+        <value nick="default" value="0"/>
+        <value nick="simple" value="1"/>
+    </enum>
+    <enum id="org.gnome.shell.extensions.ai-usage.simple-limits">
+        <value nick="session" value="0"/>
+        <value nick="weekly" value="1"/>
+        <value nick="all" value="2"/>
+    </enum>
     <enum id="org.gnome.shell.extensions.ai-usage.reset-format">
         <value nick="auto" value="0"/>
         <value nick="relative" value="1"/>
@@ -68,6 +77,26 @@
         <key name="selected-provider" type="s">
             <default>''</default>
             <summary>The provider whose tab was chosen last</summary>
+        </key>
+        <key name="view-mode" enum="org.gnome.shell.extensions.ai-usage.view-mode">
+            <default>'default'</default>
+            <summary>How much the pop-up shows</summary>
+            <description>"default": a tab per provider, its plan and Refresh. "simple": only simple-provider is read, and the pop-up holds only the cards of its limits that simple-limits names.</description>
+        </key>
+        <key name="simple-provider" type="s">
+            <choices>
+                <choice value="claude"/>
+                <choice value="codex"/>
+                <choice value="antigravity"/>
+                <choice value="ollama"/>
+            </choices>
+            <default>'claude'</default>
+            <summary>The one provider the simple view shows</summary>
+        </key>
+        <key name="simple-limits" enum="org.gnome.shell.extensions.ai-usage.simple-limits">
+            <default>'all'</default>
+            <summary>Which limits the simple view shows</summary>
+            <description>"session" or "weekly" also sets the figure on the button. Ollama has no limits and shows its models.</description>
         </key>
         <key name="tab-position" enum="org.gnome.shell.extensions.ai-usage.tab-position">
             <default>'top'</default>
