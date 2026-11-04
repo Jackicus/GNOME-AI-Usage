@@ -4,6 +4,7 @@ import GObject from 'gi://GObject';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 
+import {formatTimeSpan} from 'resource:///org/gnome/shell/misc/dateUtils.js';
 import * as BarLevel from 'resource:///org/gnome/shell/ui/barLevel.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
@@ -13,17 +14,16 @@ import {Severity, Status, describeModel, formatBreakdown, formatPercent, formatR
 // Secondary text is dimmed with actor opacity, so it suits light and dark menus.
 const DIM_OPACITY = 160;
 
-// The card a simple view of 'session' or 'weekly' keeps.
+// The window a simple view of 'session' or 'weekly' keeps.
 const SIMPLE_GROUPS = {session: 'Session', weekly: 'Weekly'};
 
-// refresh: the pop-up has a Refresh button, which the simple view leaves out.
-function explain(reading, clock, refresh) {
+function explain(reading, clock) {
     switch (reading.status) {
     case Status.SIGNED_OUT:
         return `Not signed in. Run ${reading.cli} and sign in there.`;
     case Status.EXPIRED: {
         const when = reading.expiredAt ? `expired at ${formatTime(reading.expiredAt, {clock})}` : 'has expired';
-        return reading.renewable && refresh
+        return reading.renewable
             ? `The stored login ${when}. Refresh to have ${reading.cli} renew it.`
             : `The stored login ${when}. Run ${reading.cli} once and it will refresh itself.`;
     }
@@ -62,6 +62,7 @@ class UsageIndicator extends PanelMenu.Button {
         this.add_child(this._box);
 
         this._select = select;
+        this._refresh = refresh;
         this._rows = [];
         this._selected = null;
         this._options = null;
@@ -90,6 +91,11 @@ class UsageIndicator extends PanelMenu.Button {
         this._options = options;
 
         this._renderPanel();
+        // The simple view is one notification filling the pop-up.
+        if (options.simple)
+            this.menu.box.add_style_class_name('ai-usage-simple');
+        else
+            this.menu.box.remove_style_class_name('ai-usage-simple');
         this._tabsItem.visible = !options.simple;
         this.menu.moveMenuItem(this._tabsItem, options.tabs === 'top' ? 0 : 1);
         if (this._selected)
@@ -154,81 +160,157 @@ class UsageIndicator extends PanelMenu.Button {
         this._renderTabs();
         this._section.removeAll();
 
-        const {reading} = this._selected;
+        const {reading, name} = this._selected;
+        if (this._options.simple) {
+            this._section.addMenuItem(messageItem(name, reading?.ok ? reading.at : null, this._refresh,
+                content => this._addReading(reading, item => content.add_child(item))));
+            return;
+        }
+
         this._plan.text = reading?.plan ?? '';
-        if (reading)
-            this._addReading(reading, this._options);
-        else
-            this._section.addMenuItem(captionItem('Reading usage…'));
-        // St has no :first-child or :last-child; the stylesheet pads the marked rows.
-        const rows = this._section.box.get_children();
-        rows.at(-1).add_style_class_name('ai-usage-last');
-        if (this._options.simple)
-            rows[0].add_style_class_name('ai-usage-first');
+        this._addReading(reading, item => this._section.addMenuItem(item));
+        // St has no :last-child; the stylesheet pads the marked row.
+        this._section.box.get_children().at(-1).add_style_class_name('ai-usage-last');
     }
 
+    // add: puts an item in the pop-up, or in the simple view's message.
     // options.simple is null, or which of the limits the simple view keeps.
-    _addReading(reading, {resetFormat, clock, simple}) {
+    _addReading(reading, add) {
+        const {resetFormat, clock, simple} = this._options;
+        if (!reading) {
+            add(captionItem('Reading usage…'));
+            return;
+        }
         if (!reading.ok) {
-            this._section.addMenuItem(captionItem(explain(reading, clock, !simple)));
+            add(captionItem(explain(reading, clock)));
             return;
         }
         if (reading.failed && !simple) {
-            this._section.addMenuItem(captionItem(
+            add(captionItem(
                 `Could not update: ${reading.failed}. These figures are from ${formatTime(reading.at, {clock})}.`));
         }
 
         // A local server has models rather than limits.
         if (!reading.limits.length) {
-            this._addModels(reading.models, clock);
+            addModels(reading.models, clock, add);
             return;
         }
 
         const group = SIMPLE_GROUPS[simple];
         const shown = group ? reading.limits.filter(limit => limit.group === group) : reading.limits;
         if (!shown.length) {
-            this._section.addMenuItem(captionItem(`${reading.displayName} has no ${simple} limit.`));
+            add(captionItem(`${reading.displayName} has no ${simple} limit.`));
             return;
         }
 
-        // A card per window, in the order each first appears.
-        const cards = Map.groupBy(shown, limit => limit.group ?? limit.id);
-        for (const limits of cards.values()) {
-            this._section.addMenuItem(cardItem(limits[0].group,
-                limits.map(limit => limitRow(limit, resetFormat, clock))));
-        }
+        // A card per window, in the order each first appears; in the message, a titled block.
+        const block = simple ? windowBox : cardItem;
+        const windows = Map.groupBy(shown, limit => limit.group ?? limit.id);
+        for (const limits of windows.values())
+            add(block(limits[0].group, limits.map(limit => limitRow(limit, resetFormat, clock))));
 
         if (reading.credits && !group)
-            this._section.addMenuItem(cardItem(null, [limitRow(reading.credits, resetFormat, clock)]));
+            add(block(null, [limitRow(reading.credits, resetFormat, clock)]));
         if (simple)
             return;
 
         const breakdown = formatBreakdown(reading.breakdown);
         if (breakdown)
-            this._section.addMenuItem(captionItem(breakdown));
-    }
-
-    // What ran this session first, then the rest of what is installed, a line each.
-    _addModels(models, clock) {
-        if (!models.length) {
-            this._section.addMenuItem(captionItem('No models are installed. Pull one with ollama pull.'));
-            return;
-        }
-
-        const used = models.filter(model => model.memory || model.session);
-        this._section.addMenuItem(headingItem('This session'));
-        if (!used.length)
-            this._section.addMenuItem(captionItem('No model has run yet this session.'));
-        for (const model of used)
-            this._section.addMenuItem(modelItem(describeModel(model, {clock}), model.name));
-
-        const rest = models.filter(model => !used.includes(model));
-        if (rest.length)
-            this._section.addMenuItem(headingItem('Installed'));
-        for (const model of rest)
-            this._section.addMenuItem(installedItem(describeModel(model, {clock}), model.name));
+            add(captionItem(breakdown));
     }
 });
+
+// What ran this session first, then the rest of what is installed, a line each.
+function addModels(models, clock, add) {
+    if (!models.length) {
+        add(captionItem('No models are installed. Pull one with ollama pull.'));
+        return;
+    }
+
+    const used = models.filter(model => model.memory || model.session);
+    add(headingItem('This session'));
+    if (!used.length)
+        add(captionItem('No model has run yet this session.'));
+    for (const model of used)
+        add(modelItem(describeModel(model, {clock}), model.name));
+
+    const rest = models.filter(model => !used.includes(model));
+    if (rest.length)
+        add(headingItem('Installed'));
+    for (const model of rest)
+        add(installedItem(describeModel(model, {clock}), model.name));
+}
+
+// The shell's notification (ui/messageList.js's Message), with Refresh where its close
+// button is: the provider and when it was read in the header, the content below.
+// Sensitive, though nothing activates it: St makes an insensitive item :insensitive,
+// which the theme fades, and which outranks the plain .message look.
+function messageItem(name, readAt, refresh, fill) {
+    const item = new PopupMenu.PopupBaseMenuItem({
+        activate: false,
+        hover: false,
+        can_focus: false,
+        style_class: 'message',
+    });
+    const column = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, x_expand: true});
+
+    const header = new St.BoxLayout({style_class: 'message-header', x_expand: true});
+    const headerContent = new St.BoxLayout({
+        style_class: 'message-header-content',
+        y_align: Clutter.ActorAlign.CENTER,
+        x_expand: true,
+    });
+    headerContent.add_child(new St.Label({text: name, style_class: 'message-source-title', y_align: Clutter.ActorAlign.END}));
+    if (readAt) {
+        const time = new St.Label({
+            style_class: 'event-time',
+            x_expand: true,
+            y_expand: true,
+            x_align: Clutter.ActorAlign.START,
+            y_align: Clutter.ActorAlign.END,
+        });
+        // Worded as the pop-up opens, as the shell's own time label is.
+        time.connect('notify::mapped', () => {
+            if (time.mapped)
+                time.text = formatTimeSpan(readAt);
+        });
+        headerContent.add_child(time);
+    }
+    header.add_child(headerContent);
+
+    const button = new St.Button({
+        style_class: 'message-close-button',
+        icon_name: 'view-refresh-symbolic',
+        accessible_name: 'Refresh now',
+        can_focus: true,
+        y_align: Clutter.ActorAlign.CENTER,
+    });
+    button.connect('clicked', refresh);
+    header.add_child(button);
+    column.add_child(header);
+
+    const box = new St.BoxLayout({style_class: 'message-box', x_expand: true});
+    const content = new St.BoxLayout({
+        style_class: 'message-content ai-usage-message-content',
+        orientation: Clutter.Orientation.VERTICAL,
+        x_expand: true,
+    });
+    fill(content);
+    box.add_child(content);
+    column.add_child(box);
+
+    item.add_child(column);
+    return item;
+}
+
+// A window's limits in the message: its name as the notification's title, then its rows.
+function windowBox(title, rows) {
+    const box = new St.BoxLayout({style_class: 'ai-usage-window', orientation: Clutter.Orientation.VERTICAL, x_expand: true});
+    if (title)
+        box.add_child(new St.Label({text: title, style_class: 'message-title'}));
+    rows.forEach(row => box.add_child(row));
+    return box;
+}
 
 // A plain word, no button background: dimmed like the plan beside it, lit on hover and focus.
 function refreshButton(refresh) {

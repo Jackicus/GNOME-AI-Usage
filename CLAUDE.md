@@ -87,8 +87,9 @@ the debug log on (`lib/log.js`'s `setVerbose`).
   it is still read, so it returns when the tool refreshes its login.
   `_syncProviders()` diffs against the live list, so toggling needs no restart.
 * **The simple view** (`view-mode` `simple`) makes `simple-provider` the only live
-  provider, so the others are neither read nor notified on, and the pop-up holds only
-  its cards: no tab row, plan, Refresh, breakdown or kept-figures caption.
+  provider, so the others are neither read nor notified on, and the pop-up is one
+  notification: the provider and when it was read, Refresh where the close button is,
+  then its limits; no tab row, plan, breakdown or kept-figures caption.
   `simple-limits` keeps the `Session` or `Weekly` card (by the limit's `group`), or all
   of them with the credits, and a window chosen also sets the button's figure over
   `primary-limit`. Ollama shows its models.

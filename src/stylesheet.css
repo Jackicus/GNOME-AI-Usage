@@ -157,7 +157,25 @@
     padding-bottom: 12px;
 }
 
-/* The same at the top, where the simple view has no tab row. */
-.ai-usage-first {
-    padding-top: 12px;
+/* The simple view: the message fills the pop-up, at the notification's own 16px corners
+   (.message, .notification-banner), with no edge of the pop-up's showing round it. */
+.ai-usage-menu.ai-usage-simple {
+    padding: 0;
+    border-width: 0;
+    border-radius: 16px;
+}
+
+/* Windows apart by the message's own 12px from its edge. */
+.message .message-box .ai-usage-message-content {
+    spacing: 12px;
+}
+
+.ai-usage-window {
+    spacing: 9px;
+}
+
+/* Captions and models line up with the title, as the notification's body does. */
+.ai-usage-message-content .popup-menu-item {
+    padding-left: 0;
+    padding-right: 0;
 }
