@@ -17,10 +17,18 @@ paths:
   `selected-provider`; everything redraws from the setting. The tabs are rebuilt
   only when the providers shown change, so a redraw does not take the keyboard
   focus off one.
-* **The simple view** hides the tab row (`_tabsItem.visible`) and draws only the cards:
-  `_addReading()` skips the kept-figures caption and the breakdown, and an expired login's
-  caption does not offer Refresh, which is not there. With no tab row on top, the first
-  row is marked `ai-usage-first` and padded as the last one is.
+* **The simple view is one notification** (`messageItem()`): the shell's `Message` from
+  `ui/messageList.js` rebuilt from the theme's own classes (`message` > `message-header`
+  with `message-header-content`, `message-source-title` and `event-time` > `message-box`
+  > `message-content` with a `message-title` per window), so it is a notification in
+  every theme. Refresh sits where the close button is, the same `message-close-button`
+  with Adwaita's `view-refresh-symbolic`. The time is the shell's `formatTimeSpan()` of the
+  reading, worded as the pop-up maps. The item is sensitive but inert (`activate: false`,
+  `hover: false`): St makes an insensitive one `:insensitive`, and `.message:insensitive`
+  outranks `.message`, darkening it. The pop-up (`ai-usage-simple`) loses its padding and
+  border and takes the notification's 16px corners, so the message fills it. The tab row
+  is hidden, and `_addReading()` puts each window in a titled box (`windowBox()`) instead
+  of a card, without the kept-figures caption or the breakdown.
 * The menu has a fixed `width`, wide enough for the longest label, so
   it does not move when another tab is chosen.
 * **A card per window** (`cardItem()`): the limits sharing a `group` (`Session`,
