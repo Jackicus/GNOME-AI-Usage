@@ -49,6 +49,12 @@
     padding: 2px 8px;
 }
 
+/* The theme's 12px (0.818em) at the top, where the title's line height adds 4px above its
+   letters; the other sides take those 4px too, so the content sits 17px in all round. */
+.ai-usage-card {
+    padding: 12px 16px 16px;
+}
+
 /* Rows apart by .popup-menu-item's 9px, on top of the title's own 6px below it. */
 .ai-usage-card .events-box {
     spacing: 9px;
@@ -69,9 +75,10 @@
     font-weight: bold;
 }
 
-/* The one fixed-width column, wide enough for "100%", so the columns line up. */
+/* The one fixed-width column, so the columns line up: "100%" takes 3.5em, and the
+   rest sets the reset time in from the right edge. */
 .ai-usage-limit-percent {
-    min-width: 3.5em;
+    min-width: 4.5em;
 }
 
 .ai-usage-limit-figure {
@@ -148,4 +155,9 @@
 /* With .popup-menu-content's 6px, the sides' 18px. Last, to outweigh the row's own padding. */
 .ai-usage-last {
     padding-bottom: 12px;
+}
+
+/* The same at the top, where the simple view has no tab row. */
+.ai-usage-first {
+    padding-top: 12px;
 }

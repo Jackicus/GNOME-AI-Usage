@@ -13,13 +13,17 @@ import {Severity, Status, describeModel, formatBreakdown, formatPercent, formatR
 // Secondary text is dimmed with actor opacity, so it suits light and dark menus.
 const DIM_OPACITY = 160;
 
-function explain(reading, clock) {
+// The card a simple view of 'session' or 'weekly' keeps.
+const SIMPLE_GROUPS = {session: 'Session', weekly: 'Weekly'};
+
+// refresh: the pop-up has a Refresh button, which the simple view leaves out.
+function explain(reading, clock, refresh) {
     switch (reading.status) {
     case Status.SIGNED_OUT:
         return `Not signed in. Run ${reading.cli} and sign in there.`;
     case Status.EXPIRED: {
         const when = reading.expiredAt ? `expired at ${formatTime(reading.expiredAt, {clock})}` : 'has expired';
-        return reading.renewable
+        return reading.renewable && refresh
             ? `The stored login ${when}. Refresh to have ${reading.cli} renew it.`
             : `The stored login ${when}. Run ${reading.cli} once and it will refresh itself.`;
     }
@@ -86,6 +90,7 @@ class UsageIndicator extends PanelMenu.Button {
         this._options = options;
 
         this._renderPanel();
+        this._tabsItem.visible = !options.simple;
         this.menu.moveMenuItem(this._tabsItem, options.tabs === 'top' ? 0 : 1);
         if (this._selected)
             this._renderMenu();
@@ -155,16 +160,20 @@ class UsageIndicator extends PanelMenu.Button {
             this._addReading(reading, this._options);
         else
             this._section.addMenuItem(captionItem('Reading usage…'));
-        // St has no :last-child; the stylesheet pads the marked row.
-        this._section.box.get_children().at(-1).add_style_class_name('ai-usage-last');
+        // St has no :first-child or :last-child; the stylesheet pads the marked rows.
+        const rows = this._section.box.get_children();
+        rows.at(-1).add_style_class_name('ai-usage-last');
+        if (this._options.simple)
+            rows[0].add_style_class_name('ai-usage-first');
     }
 
-    _addReading(reading, {resetFormat, clock}) {
+    // options.simple is null, or which of the limits the simple view keeps.
+    _addReading(reading, {resetFormat, clock, simple}) {
         if (!reading.ok) {
-            this._section.addMenuItem(captionItem(explain(reading, clock)));
+            this._section.addMenuItem(captionItem(explain(reading, clock, !simple)));
             return;
         }
-        if (reading.failed) {
+        if (reading.failed && !simple) {
             this._section.addMenuItem(captionItem(
                 `Could not update: ${reading.failed}. These figures are from ${formatTime(reading.at, {clock})}.`));
         }
@@ -175,15 +184,24 @@ class UsageIndicator extends PanelMenu.Button {
             return;
         }
 
+        const group = SIMPLE_GROUPS[simple];
+        const shown = group ? reading.limits.filter(limit => limit.group === group) : reading.limits;
+        if (!shown.length) {
+            this._section.addMenuItem(captionItem(`${reading.displayName} has no ${simple} limit.`));
+            return;
+        }
+
         // A card per window, in the order each first appears.
-        const cards = Map.groupBy(reading.limits, limit => limit.group ?? limit.id);
+        const cards = Map.groupBy(shown, limit => limit.group ?? limit.id);
         for (const limits of cards.values()) {
             this._section.addMenuItem(cardItem(limits[0].group,
                 limits.map(limit => limitRow(limit, resetFormat, clock))));
         }
 
-        if (reading.credits)
+        if (reading.credits && !group)
             this._section.addMenuItem(cardItem(null, [limitRow(reading.credits, resetFormat, clock)]));
+        if (simple)
+            return;
 
         const breakdown = formatBreakdown(reading.breakdown);
         if (breakdown)

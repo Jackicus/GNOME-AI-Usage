@@ -86,6 +86,12 @@ the debug log on (`lib/log.js`'s `setVerbose`).
   provider with no `OK` reading, or no reading yet, and the button with the last tab;
   it is still read, so it returns when the tool refreshes its login.
   `_syncProviders()` diffs against the live list, so toggling needs no restart.
+* **The simple view** (`view-mode` `simple`) makes `simple-provider` the only live
+  provider, so the others are neither read nor notified on, and the pop-up holds only
+  its cards: no tab row, plan, Refresh, breakdown or kept-figures caption.
+  `simple-limits` keeps the `Session` or `Weekly` card (by the limit's `group`), or all
+  of them with the credits, and a window chosen also sets the button's figure over
+  `primary-limit`. Ollama shows its models.
 * Role `${uuid}`, placed in `panel-box` at `panel-index` (default left, 1: after
   the workspaces indicator, which keeps the corner); `_place()` rebuilds it
   to move it.
@@ -122,6 +128,8 @@ the debug log on (`lib/log.js`'s `setVerbose`).
 Global keys: `primary-limit` (`session` default, `highest`, `weekly`),
 `show-percent`, `button-label`, `button-icon`, `hide-unavailable`, `renew-login`, `reset-format`,
 `selected-provider` (the tab chosen last), `tab-position` (`top` default, `bottom`),
+`view-mode` (`default`, `simple`), `simple-provider` (`claude` default), `simple-limits`
+(`session`, `weekly`, `all` default),
 `panel-box`, `panel-index`, `poll-seconds`, `warn-percent`, `critical-percent`,
 `notify-percent`.
 
