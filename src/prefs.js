@@ -41,12 +41,11 @@ export default class AiUsagePreferences extends ExtensionPreferences {
             title: 'What it shows',
             description: 'The single figure on the button itself, for the provider whose tab is selected.',
         });
-        const figure = comboRow(settings, 'primary-limit', 'Figure on the button', [
+        shown.add(comboRow(settings, 'primary-limit', 'Figure on the button', [
             ['highest', 'Whichever is highest'],
             ['session', 'Current session'],
             ['weekly', 'This week'],
-        ]);
-        shown.add(figure);
+        ]));
         shown.add(switchRow(settings, 'show-percent', 'Show the percentage',
             'With this off the button shows only its label, tinted by how much has been used.'));
         const label = comboRow(settings, 'button-label', 'Beside the percentage', [
@@ -54,7 +53,7 @@ export default class AiUsagePreferences extends ExtensionPreferences {
             ['icon', 'An icon'],
             ['none', 'Nothing'],
         ]);
-        label.subtitle = 'The plan of the selected tab, such as Pro. While there is nothing to show, the button reads “AI”.';
+        label.subtitle = 'The plan, such as Pro, is then not repeated on the cards. With nothing to show it reads “AI”.';
         shown.add(label);
         shown.add(iconRow(settings));
         shown.add(switchRow(settings, 'hide-unavailable', 'Hide a provider with nothing to show',
@@ -67,40 +66,30 @@ export default class AiUsagePreferences extends ExtensionPreferences {
             description: 'Every limit carries the time it resets, worded the same in the pop-up and in '
                 + 'notifications. An exact time is in your own timezone, on the clock your desktop is set to.',
         });
-        const view = comboRow(settings, 'view-mode', 'View', [
-            ['default', 'Default'],
-            ['simple', 'Simple'],
+        const choice = comboRow(settings, 'provider-choice', 'Choose the provider', [
+            ['tabs', 'From tabs'],
+            ['preferences', 'Here'],
         ]);
-        view.subtitle = 'Simple is one provider\'s limits and nothing else.';
-        popup.add(view);
-        const provider = comboRow(settings, 'simple-provider', 'Provider',
+        choice.subtitle = 'From tabs in the pop-up, or here, which reads that provider alone.';
+        popup.add(choice);
+        const provider = comboRow(settings, 'chosen-provider', 'Provider',
             PROVIDERS.map(p => [p.id, p.displayName]));
         popup.add(provider);
-        const limits = comboRow(settings, 'simple-limits', 'Limits', [
-            ['session', 'Session'],
-            ['weekly', 'Weekly'],
-            ['all', 'All'],
-        ]);
-        limits.subtitle = 'Session or Weekly is also the figure on the button.';
-        popup.add(limits);
         const tabs = comboRow(settings, 'tab-position', 'Provider tabs', [
             ['top', 'At the top'],
             ['bottom', 'At the bottom'],
         ]);
         popup.add(tabs);
 
-        // Ollama has no limits to choose from: its pop-up lists its models.
-        const syncView = () => {
-            const simple = settings.get_string('view-mode') === 'simple';
-            provider.visible = simple;
-            limits.visible = simple;
-            limits.sensitive = settings.get_string('simple-provider') !== 'ollama';
-            tabs.visible = !simple;
-            figure.sensitive = !simple || settings.get_string('simple-limits') === 'all';
+        const syncChoice = () => {
+            const here = settings.get_string('provider-choice') === 'preferences';
+            provider.visible = here;
+            tabs.visible = !here;
         };
-        syncView();
-        const viewId = settings.connect('changed', syncView);
-        page.connect('destroy', () => settings.disconnect(viewId));
+        syncChoice();
+        const choiceId = settings.connect('changed::provider-choice', syncChoice);
+        page.connect('destroy', () => settings.disconnect(choiceId));
+
         const reset = comboRow(settings, 'reset-format', 'Reset times', [
             ['auto', 'Automatic'],
             ['relative', 'Countdown'],

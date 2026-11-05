@@ -14,56 +14,50 @@
     color: #e01b24;
 }
 
-/* Fixed, so the pop-up does not move when another provider's tab is chosen, and wide
-   enough for the longest label (measured: a Quick Settings panel is 27em). */
+/* The width is fixed, so the pop-up does not move when another provider's tab is chosen,
+   and wide enough for the longest label (measured: a Quick Settings panel is 27em).
+   The cards sit 12px from the edge and from each other, as the notification list spaces
+   its messages, and the corners are the message's 16px plus that gap, so they run
+   concentric: 11px of padding, with the 1px border. */
 .ai-usage-menu {
     width: 32em;
+    padding: 11px;
+    border-radius: 28px;
+    spacing: 12px;
 }
 
-/* With .popup-menu-content's 6px, 19px of white space on all four sides as seen. */
+.ai-usage-cards {
+    spacing: 12px;
+}
+
+.ai-usage-tabs-row,
+.ai-usage-card {
+    margin: 0;
+}
+
 .ai-usage-tabs-row {
-    padding-top: 9px;
-    padding-bottom: 6px;
+    padding: 0;
 }
 
-.ai-usage-tabs-box {
-    spacing: 6px;
-}
-
-/* A box around equal tabs, outlined in the bar track's grey, with no fill of its own.
-   Its corners sit concentric around the tabs' 8px (.button) at 3px in. */
+/* The gap round the pop-up stands in for the controls row's own padding. */
 .ai-usage-tabs {
-    border: 1px solid rgba(127, 127, 127, 0.25);
-    border-radius: 11px;
-    padding: 3px;
-    spacing: 3px;
+    padding: 0;
 }
 
-/* The shell's flat button, whose :checked look marks the open tab. */
+/* Narrower than .button's 24px a side, so four names fit. */
 .ai-usage-tab {
     padding: 3px 12px;
 }
 
-/* With the card's 4px margin, its edge lines up with the captions' text. */
-.ai-usage-card-row {
-    padding: 2px 8px;
+/* A card with no header (the credits) is as far in at the top as at the sides, without
+   the space the theme leaves above a headerless message's body. */
+.ai-usage-card .message-box {
+    margin-top: 0;
 }
 
-/* The theme's 12px (0.818em) at the top, where the title's line height adds 4px above its
-   letters; the other sides take those 4px too, so the content sits 17px in all round. */
-.ai-usage-card {
-    padding: 12px 16px 16px;
-}
-
-/* Rows apart by .popup-menu-item's 9px, on top of the title's own 6px below it. */
-.ai-usage-card .events-box {
+/* Rows apart by .popup-menu-item's 9px. */
+.ai-usage-card-content {
     spacing: 9px;
-}
-
-/* .popup-menu-item's own 9px. */
-.ai-usage-limit {
-    padding-top: 9px;
-    padding-bottom: 9px;
 }
 
 .ai-usage-limit-row {
@@ -90,11 +84,6 @@
     font-size: 0.95em;
 }
 
-/* Room to hit, beyond the word, without the tabs row growing. */
-.ai-usage-refresh {
-    padding: 0 4px;
-}
-
 /* A BarLevel, as .slider draws one; 6px above is .popup-menu-item's spacing.
    The overdrive colour is never drawn, but BarLevel reads it. */
 .ai-usage-bar {
@@ -117,22 +106,6 @@
     font-size: 0.85em;
 }
 
-.ai-usage-caption-row {
-    padding-top: 2px;
-    padding-bottom: 6px;
-}
-
-/* A window's heading over its rows; the row below brings its own 9px. */
-.ai-usage-heading-row {
-    padding-top: 9px;
-    padding-bottom: 0;
-}
-
-.ai-usage-heading {
-    font-size: 0.85em;
-    font-weight: bold;
-}
-
 /* A model's lines sit closer than rows do. */
 .ai-usage-model {
     spacing: 2px;
@@ -142,40 +115,6 @@
     color: -st-accent-color;
 }
 
-/* An installed model is one line, so it takes half a row's padding. */
-.ai-usage-installed {
-    padding-top: 5px;
-    padding-bottom: 5px;
-}
-
 .ai-usage-installed-label {
     font-size: 0.95em;
-}
-
-/* With .popup-menu-content's 6px, the sides' 18px. Last, to outweigh the row's own padding. */
-.ai-usage-last {
-    padding-bottom: 12px;
-}
-
-/* The simple view: the message fills the pop-up, at the notification's own 16px corners
-   (.message, .notification-banner), with no edge of the pop-up's showing round it. */
-.ai-usage-menu.ai-usage-simple {
-    padding: 0;
-    border-width: 0;
-    border-radius: 16px;
-}
-
-/* Windows apart by the message's own 12px from its edge. */
-.message .message-box .ai-usage-message-content {
-    spacing: 12px;
-}
-
-.ai-usage-window {
-    spacing: 9px;
-}
-
-/* Captions and models line up with the title, as the notification's body does. */
-.ai-usage-message-content .popup-menu-item {
-    padding-left: 0;
-    padding-right: 0;
 }

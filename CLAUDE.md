@@ -78,21 +78,19 @@ the debug log on (`lib/log.js`'s `setVerbose`).
   loader reads) or nothing beside it; with nothing else to show it reads `AI`.
   **No provider logo or icon is shipped or used, and none will be** (README,
   Trademarks): the tabs carry the names, and an icon is only the user's file.
-* **The pop-up has a tab per live provider**, at the top or, by `tab-position`,
-  the bottom, with refresh at the end of the tab row. A click on a tab writes
+* **The pop-up is a card per window, and the provider is chosen by tabs or in the
+  preferences** (`provider-choice`). With `tabs` (default) the pop-up has a tab per
+  live provider, at the top or, by `tab-position`, the bottom. A click on a tab writes
   `selected-provider`, which the next redraw reads back: the pop-up opens on that
   tab and the button shows its figure; with none chosen, or its tab hidden, the
-  first tab is selected. `hide-unavailable` (default off) drops the tab of a
+  first tab is selected. With `preferences`, `chosen-provider` is the only live
+  provider, so the others are neither read nor notified on, and there are no tabs.
+  `hide-unavailable` (default off) drops the tab of a
   provider with no `OK` reading, or no reading yet, and the button with the last tab;
   it is still read, so it returns when the tool refreshes its login.
   `_syncProviders()` diffs against the live list, so toggling needs no restart.
-* **The simple view** (`view-mode` `simple`) makes `simple-provider` the only live
-  provider, so the others are neither read nor notified on, and the pop-up is one
-  notification: the provider and when it was read, Refresh where the close button is,
-  then its limits; no tab row, plan, breakdown or kept-figures caption.
-  `simple-limits` keeps the `Session` or `Weekly` card (by the limit's `group`), or all
-  of them with the credits, and a window chosen also sets the button's figure over
-  `primary-limit`. Ollama shows its models.
+  Refresh is the first card's close button; the plan sits beside each window's
+  title, unless the button already shows it.
 * Role `${uuid}`, placed in `panel-box` at `panel-index` (default left, 1: after
   the workspaces indicator, which keeps the corner); `_place()` rebuilds it
   to move it.
@@ -129,8 +127,7 @@ the debug log on (`lib/log.js`'s `setVerbose`).
 Global keys: `primary-limit` (`session` default, `highest`, `weekly`),
 `show-percent`, `button-label`, `button-icon`, `hide-unavailable`, `renew-login`, `reset-format`,
 `selected-provider` (the tab chosen last), `tab-position` (`top` default, `bottom`),
-`view-mode` (`default`, `simple`), `simple-provider` (`claude` default), `simple-limits`
-(`session`, `weekly`, `all` default),
+`provider-choice` (`tabs` default, `preferences`), `chosen-provider` (`claude` default),
 `panel-box`, `panel-index`, `poll-seconds`, `warn-percent`, `critical-percent`,
 `notify-percent`.
 

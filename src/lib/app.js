@@ -71,7 +71,7 @@ export class AiUsageApp {
                 this._schedule();
             else if (key === 'renew-login')
                 this.refresh();
-            else if (key === 'view-mode' || key === 'simple-provider')
+            else if (key === 'provider-choice' || key === 'chosen-provider')
                 this._readAgain();
             else
                 this._redraw();
@@ -125,10 +125,10 @@ export class AiUsageApp {
     }
 
     // A provider is live when it is switched on, its command-line tool is
-    // installed and, in the simple view, it is the one chosen. The button exists while one is.
+    // installed and, when it is chosen in the preferences, the one chosen. The button exists while one is.
     _syncProviders() {
-        const only = this._settings.get_string('view-mode') === 'simple'
-            ? this._settings.get_string('simple-provider') : null;
+        const only = this._settings.get_string('provider-choice') === 'preferences'
+            ? this._settings.get_string('chosen-provider') : null;
         for (const entry of this._providers.values()) {
             const {provider, settings} = entry;
             entry.live = settings.get_boolean('enabled') && (!only || provider.id === only);
@@ -287,17 +287,16 @@ export class AiUsageApp {
             return;
 
         const s = this._settings;
-        const simple = s.get_string('view-mode') === 'simple' ? s.get_string('simple-limits') : null;
+        const tabs = s.get_string('provider-choice') === 'tabs';
         const thresholds = {warn: s.get_int('warn-percent'), critical: s.get_int('critical-percent')};
         const options = {
             showPercent: s.get_boolean('show-percent'),
             buttonLabel: s.get_string('button-label'),
             buttonIcon: s.get_string('button-icon'),
             hideUnavailable: s.get_boolean('hide-unavailable'),
-            limit: simple && simple !== 'all' ? simple : s.get_string('primary-limit'),
-            simple,
-            selected: s.get_string('selected-provider'),
-            tabs: s.get_string('tab-position'),
+            limit: s.get_string('primary-limit'),
+            selected: s.get_string(tabs ? 'selected-provider' : 'chosen-provider'),
+            tabs: tabs ? s.get_string('tab-position') : null,
             resetFormat: s.get_string('reset-format'),
             clock: this._interface.get_string('clock-format'),
         };

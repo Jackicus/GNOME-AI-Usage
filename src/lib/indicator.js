@@ -4,7 +4,6 @@ import GObject from 'gi://GObject';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 
-import {formatTimeSpan} from 'resource:///org/gnome/shell/misc/dateUtils.js';
 import * as BarLevel from 'resource:///org/gnome/shell/ui/barLevel.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
@@ -13,9 +12,6 @@ import {Severity, Status, describeModel, formatBreakdown, formatPercent, formatR
 
 // Secondary text is dimmed with actor opacity, so it suits light and dark menus.
 const DIM_OPACITY = 160;
-
-// The window a simple view of 'session' or 'weekly' keeps.
-const SIMPLE_GROUPS = {session: 'Session', weekly: 'Weekly'};
 
 function explain(reading, clock) {
     switch (reading.status) {
@@ -68,16 +64,13 @@ class UsageIndicator extends PanelMenu.Button {
         this._options = null;
         this._tabIds = '';
 
-        this._tabs = new St.BoxLayout({style_class: 'ai-usage-tabs', x_expand: true});
+        // The notification list's controls row, so the tabs are its round buttons.
+        this._tabs = new St.BoxLayout({style_class: 'message-list-controls ai-usage-tabs', x_expand: true});
         this._tabs.layout_manager.homogeneous = true;
-        this._plan = new St.Label({
-            style_class: 'ai-usage-caption',
-            x_expand: true,
-            y_align: Clutter.ActorAlign.CENTER,
-            opacity: DIM_OPACITY,
-        });
-        this._tabsItem = tabsItem(this._tabs, this._plan, refresh);
+        this._tabsItem = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false, style_class: 'ai-usage-tabs-row'});
+        this._tabsItem.add_child(this._tabs);
         this._section = new PopupMenu.PopupMenuSection();
+        this._section.box.add_style_class_name('ai-usage-cards');
         this.menu.addMenuItem(this._tabsItem);
         this.menu.addMenuItem(this._section);
     }
@@ -91,13 +84,8 @@ class UsageIndicator extends PanelMenu.Button {
         this._options = options;
 
         this._renderPanel();
-        // The simple view is one notification filling the pop-up.
-        if (options.simple)
-            this.menu.box.add_style_class_name('ai-usage-simple');
-        else
-            this.menu.box.remove_style_class_name('ai-usage-simple');
-        this._tabsItem.visible = !options.simple;
-        this.menu.moveMenuItem(this._tabsItem, options.tabs === 'top' ? 0 : 1);
+        this._tabsItem.visible = !!options.tabs;
+        this.menu.moveMenuItem(this._tabsItem, options.tabs === 'bottom' ? 1 : 0);
         if (this._selected)
             this._renderMenu();
     }
@@ -142,7 +130,7 @@ class UsageIndicator extends PanelMenu.Button {
             for (const row of this._rows) {
                 const tab = new St.Button({
                     label: row.name,
-                    style_class: 'button flat ai-usage-tab',
+                    style_class: 'button flat message-list-clear-button ai-usage-tab',
                     can_focus: true,
                     x_expand: true,
                 });
@@ -156,200 +144,131 @@ class UsageIndicator extends PanelMenu.Button {
         });
     }
 
+    // Refresh takes the first card's close button.
     _renderMenu() {
         this._renderTabs();
         this._section.removeAll();
 
         const {reading, name} = this._selected;
-        if (this._options.simple) {
-            this._section.addMenuItem(messageItem(name, reading?.ok ? reading.at : null, this._refresh,
-                content => this._addReading(reading, item => content.add_child(item))));
-            return;
-        }
-
-        this._plan.text = reading?.plan ?? '';
-        this._addReading(reading, item => this._section.addMenuItem(item));
-        // St has no :last-child; the stylesheet pads the marked row.
-        this._section.box.get_children().at(-1).add_style_class_name('ai-usage-last');
+        // The button already names the plan when it shows one.
+        const plan = this._options.buttonLabel === 'plan' ? null : reading?.plan;
+        this._cards(reading, name).forEach(({title, window, children}, i) => {
+            this._section.addMenuItem(cardItem(title, window ? plan : null, i ? null : this._refresh, children));
+        });
     }
 
-    // add: puts an item in the pop-up, or in the simple view's message.
-    // options.simple is null, or which of the limits the simple view keeps.
-    _addReading(reading, add) {
-        const {resetFormat, clock, simple} = this._options;
-        if (!reading) {
-            add(captionItem('Reading usage…'));
-            return;
-        }
-        if (!reading.ok) {
-            add(captionItem(explain(reading, clock)));
-            return;
-        }
-        if (reading.failed && !simple) {
-            add(captionItem(
-                `Could not update: ${reading.failed}. These figures are from ${formatTime(reading.at, {clock})}.`));
+    // [{title, window, children}]: window marks a card of limits, which carries the plan.
+    _cards(reading, name) {
+        const {resetFormat, clock} = this._options;
+        if (!reading)
+            return [{title: name, children: [captionLabel('Reading usage…')]}];
+        if (!reading.ok)
+            return [{title: name, children: [captionLabel(explain(reading, clock), false)]}];
+
+        const cards = [];
+        if (reading.failed) {
+            cards.push({title: 'Not updated', children: [captionLabel(
+                `Could not update: ${reading.failed}. These figures are from ${formatTime(reading.at, {clock})}.`, false)]});
         }
 
         // A local server has models rather than limits.
-        if (!reading.limits.length) {
-            addModels(reading.models, clock, add);
-            return;
+        if (!reading.limits.length)
+            return cards.concat(modelCards(reading.models, clock));
+
+        // A card per window, in the order each first appears.
+        const windows = Map.groupBy(reading.limits, limit => limit.group ?? limit.id);
+        for (const limits of windows.values()) {
+            cards.push({
+                title: limits[0].group,
+                window: true,
+                children: limits.map(limit => limitRow(limit, resetFormat, clock)),
+            });
         }
+        if (reading.credits)
+            cards.push({title: null, children: [limitRow(reading.credits, resetFormat, clock)]});
 
-        const group = SIMPLE_GROUPS[simple];
-        const shown = group ? reading.limits.filter(limit => limit.group === group) : reading.limits;
-        if (!shown.length) {
-            add(captionItem(`${reading.displayName} has no ${simple} limit.`));
-            return;
-        }
-
-        // A card per window, in the order each first appears; in the message, a titled block.
-        const block = simple ? windowBox : cardItem;
-        const windows = Map.groupBy(shown, limit => limit.group ?? limit.id);
-        for (const limits of windows.values())
-            add(block(limits[0].group, limits.map(limit => limitRow(limit, resetFormat, clock))));
-
-        if (reading.credits && !group)
-            add(block(null, [limitRow(reading.credits, resetFormat, clock)]));
-        if (simple)
-            return;
-
+        // The breakdown is of the week, so it goes under the weekly limits.
         const breakdown = formatBreakdown(reading.breakdown);
         if (breakdown)
-            add(captionItem(breakdown));
+            (cards.find(card => card.title === 'Weekly') ?? cards.at(-1)).children.push(captionLabel(breakdown));
+        return cards;
     }
 });
 
 // What ran this session first, then the rest of what is installed, a line each.
-function addModels(models, clock, add) {
-    if (!models.length) {
-        add(captionItem('No models are installed. Pull one with ollama pull.'));
-        return;
-    }
+function modelCards(models, clock) {
+    if (!models.length)
+        return [{title: 'Installed', children: [captionLabel('No models are installed. Pull one with ollama pull.')]}];
 
     const used = models.filter(model => model.memory || model.session);
-    add(headingItem('This session'));
-    if (!used.length)
-        add(captionItem('No model has run yet this session.'));
-    for (const model of used)
-        add(modelItem(describeModel(model, {clock}), model.name));
-
     const rest = models.filter(model => !used.includes(model));
+    const cards = [{
+        title: 'This session',
+        children: used.length
+            ? used.map(model => modelRow(describeModel(model, {clock}), model.name))
+            : [captionLabel('No model has run yet this session.')],
+    }];
     if (rest.length)
-        add(headingItem('Installed'));
-    for (const model of rest)
-        add(installedItem(describeModel(model, {clock}), model.name));
+        cards.push({title: 'Installed', children: rest.map(model => installedRow(describeModel(model, {clock}), model.name))});
+    return cards;
 }
 
-// The shell's notification (ui/messageList.js's Message), with Refresh where its close
-// button is: the provider and when it was read in the header, the content below.
-// Sensitive, though nothing activates it: St makes an insensitive item :insensitive,
-// which the theme fades, and which outranks the plain .message look.
-function messageItem(name, readAt, refresh, fill) {
+// The shell's notification (ui/messageList.js's Message), rebuilt from the theme's own
+// classes: the title, and the plan where its time goes, then the rows. Refresh, when
+// given, is where its close button is. Sensitive, though nothing activates it: St makes
+// an insensitive item :insensitive, which outranks the plain .message look.
+function cardItem(title, plan, refresh, children) {
     const item = new PopupMenu.PopupBaseMenuItem({
         activate: false,
         hover: false,
         can_focus: false,
-        style_class: 'message',
+        style_class: 'message ai-usage-card',
     });
     const column = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, x_expand: true});
 
-    const header = new St.BoxLayout({style_class: 'message-header', x_expand: true});
-    const headerContent = new St.BoxLayout({
-        style_class: 'message-header-content',
-        y_align: Clutter.ActorAlign.CENTER,
-        x_expand: true,
-    });
-    headerContent.add_child(new St.Label({text: name, style_class: 'message-source-title', y_align: Clutter.ActorAlign.END}));
-    if (readAt) {
-        const time = new St.Label({
-            style_class: 'event-time',
+    if (title || refresh) {
+        const header = new St.BoxLayout({style_class: 'message-header', x_expand: true});
+        const headerContent = new St.BoxLayout({
+            style_class: 'message-header-content',
+            y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
-            y_expand: true,
-            x_align: Clutter.ActorAlign.START,
-            y_align: Clutter.ActorAlign.END,
         });
-        // Worded as the pop-up opens, as the shell's own time label is.
-        time.connect('notify::mapped', () => {
-            if (time.mapped)
-                time.text = formatTimeSpan(readAt);
-        });
-        headerContent.add_child(time);
-    }
-    header.add_child(headerContent);
+        if (title)
+            headerContent.add_child(new St.Label({text: title, style_class: 'message-source-title', y_align: Clutter.ActorAlign.END}));
+        if (plan) {
+            headerContent.add_child(new St.Label({
+                text: plan,
+                style_class: 'event-time',
+                x_expand: true,
+                x_align: Clutter.ActorAlign.START,
+                y_align: Clutter.ActorAlign.END,
+            }));
+        }
+        header.add_child(headerContent);
 
-    const button = new St.Button({
-        style_class: 'message-close-button',
-        icon_name: 'view-refresh-symbolic',
-        accessible_name: 'Refresh now',
-        can_focus: true,
-        y_align: Clutter.ActorAlign.CENTER,
-    });
-    button.connect('clicked', refresh);
-    header.add_child(button);
-    column.add_child(header);
+        if (refresh) {
+            const button = new St.Button({
+                style_class: 'message-close-button',
+                icon_name: 'view-refresh-symbolic',
+                accessible_name: 'Refresh now',
+                can_focus: true,
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+            button.connect('clicked', refresh);
+            header.add_child(button);
+        }
+        column.add_child(header);
+    }
 
     const box = new St.BoxLayout({style_class: 'message-box', x_expand: true});
     const content = new St.BoxLayout({
-        style_class: 'message-content ai-usage-message-content',
+        style_class: 'message-content ai-usage-card-content',
         orientation: Clutter.Orientation.VERTICAL,
         x_expand: true,
     });
-    fill(content);
+    children.forEach(child => content.add_child(child));
     box.add_child(content);
     column.add_child(box);
-
-    item.add_child(column);
-    return item;
-}
-
-// A window's limits in the message: its name as the notification's title, then its rows.
-function windowBox(title, rows) {
-    const box = new St.BoxLayout({style_class: 'ai-usage-window', orientation: Clutter.Orientation.VERTICAL, x_expand: true});
-    if (title)
-        box.add_child(new St.Label({text: title, style_class: 'message-title'}));
-    rows.forEach(row => box.add_child(row));
-    return box;
-}
-
-// A plain word, no button background: dimmed like the plan beside it, lit on hover and focus.
-function refreshButton(refresh) {
-    const button = new St.Button({
-        style_class: 'ai-usage-refresh',
-        can_focus: true,
-        accessible_name: 'Refresh now',
-        y_align: Clutter.ActorAlign.CENTER,
-        opacity: DIM_OPACITY,
-        child: new St.Label({text: 'Refresh', style_class: 'ai-usage-caption'}),
-    });
-    const light = () => {
-        button.opacity = button.hover || button.has_key_focus() ? 255 : DIM_OPACITY;
-    };
-    button.connect('notify::hover', light);
-    button.connect('key-focus-in', light);
-    button.connect('key-focus-out', light);
-    button.connect('clicked', refresh);
-    return button;
-}
-
-function inertItem(styleClass) {
-    return new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false, style_class: styleClass});
-}
-
-// The tabs across the top, the plan and refresh on the line below.
-function tabsItem(tabs, plan, refresh) {
-    const item = inertItem('ai-usage-tabs-row');
-    const column = new St.BoxLayout({
-        style_class: 'ai-usage-tabs-box',
-        orientation: Clutter.Orientation.VERTICAL,
-        x_expand: true,
-    });
-    column.add_child(tabs);
-
-    const line = new St.BoxLayout({x_expand: true});
-    line.add_child(plan);
-    line.add_child(refreshButton(refresh));
-    column.add_child(line);
 
     item.add_child(column);
     return item;
@@ -406,24 +325,6 @@ function limitRow(limit, resetFormat, clock) {
     return column;
 }
 
-// The calendar's events card, so it takes the shell's own look in every theme. Reactive,
-// as that one is: St marks a widget that is not :insensitive, which the theme greys out.
-function cardItem(title, rows) {
-    const item = inertItem('ai-usage-card-row');
-    const card = new St.BoxLayout({style_class: 'events-button ai-usage-card', reactive: true, x_expand: true});
-    const box = new St.BoxLayout({
-        style_class: 'events-box',
-        orientation: Clutter.Orientation.VERTICAL,
-        x_expand: true,
-    });
-    if (title)
-        box.add_child(new St.Label({text: title, style_class: 'events-title'}));
-    rows.forEach(row => box.add_child(row));
-    card.add_child(box);
-    item.add_child(card);
-    return item;
-}
-
 function rowLabel(text, styleClass, props = {}) {
     const label = new St.Label({text, style_class: styleClass, y_align: Clutter.ActorAlign.CENTER, ...props});
     label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
@@ -431,8 +332,7 @@ function rowLabel(text, styleClass, props = {}) {
 }
 
 // Name and state, then what it holds in memory or what it is, then its session figures.
-function modelItem({state, detail, usage}, name) {
-    const item = inertItem('ai-usage-limit');
+function modelRow({state, detail, usage}, name) {
     const column = new St.BoxLayout({style_class: 'ai-usage-model', orientation: Clutter.Orientation.VERTICAL, x_expand: true});
 
     const top = new St.BoxLayout({style_class: 'ai-usage-limit-row'});
@@ -445,31 +345,21 @@ function modelItem({state, detail, usage}, name) {
 
     for (const line of [detail, usage].filter(Boolean))
         column.add_child(rowLabel(line, 'ai-usage-caption', {opacity: DIM_OPACITY}));
-    item.add_child(column);
-    return item;
+    return column;
 }
 
 // One line: the name, and what the model is.
-function installedItem({detail}, name) {
-    const item = inertItem('ai-usage-installed');
+function installedRow({detail}, name) {
     const row = new St.BoxLayout({style_class: 'ai-usage-limit-row', x_expand: true});
     row.add_child(rowLabel(name, 'ai-usage-installed-label', {x_expand: true}));
     if (detail)
         row.add_child(rowLabel(detail, 'ai-usage-caption', {opacity: DIM_OPACITY}));
-    item.add_child(row);
-    return item;
+    return row;
 }
 
-function headingItem(text) {
-    const item = inertItem('ai-usage-heading-row');
-    item.add_child(new St.Label({text, style_class: 'ai-usage-heading', x_expand: true, opacity: DIM_OPACITY}));
-    return item;
-}
-
-function captionItem(text) {
-    const item = inertItem('ai-usage-caption-row');
-    const label = new St.Label({text, style_class: 'ai-usage-caption', x_expand: true, opacity: DIM_OPACITY});
+// dim: false for a card's whole message, which reads as a notification's body.
+function captionLabel(text, dim = true) {
+    const label = new St.Label({text, style_class: 'ai-usage-caption', x_expand: true, opacity: dim ? DIM_OPACITY : 255});
     label.clutter_text.line_wrap = true;
-    item.add_child(label);
-    return item;
+    return label;
 }

@@ -16,8 +16,8 @@ SHOTS_SETTLE=35
 # 'do "click 117 16" "shot FILE 0 0 700 360"'.
 SHOTS_BUTTON="117 16"
 # The pop-up's first tab (Claude) and its Ollama tab, the fourth.
-SHOTS_TAB_CLAUDE="82 72"
-SHOTS_TAB_OLLAMA="413 72"
+SHOTS_TAB_CLAUDE="74 63"
+SHOTS_TAB_OLLAMA="430 63"
 # The preferences window opens centred, so its tabs are at fixed points too.
 SHOTS_TAB_BUTTON="677 201"
 SHOTS_TAB_READINGS="799 201"

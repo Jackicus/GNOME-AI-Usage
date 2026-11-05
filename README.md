@@ -4,7 +4,7 @@ Shows how much of your AI subscriptions' rate limits you have used, and what you
 Ollama models did this session, as a button in the GNOME Shell top bar.
 
 ![The pop-up under the top-bar button reading "Max 12%", just after the workspaces, with tabs for Claude, Codex, Antigravity and Ollama and
-Claude's limits below in cards like the calendar's, Session and Weekly, each row with a bar and its reset time.](docs/screenshots/pop-up.png)
+Claude's limits below in notification cards, Session and Weekly, each row with a bar and its reset time.](docs/screenshots/pop-up.png)
 
 ## What it does
 
@@ -12,9 +12,8 @@ Claude's limits below in cards like the calendar's, Session and Weekly, each row
   subscription's figure beside its plan name, an image of your choosing or nothing, amber at
   80% and red at 95%.
 - **A tab per subscription** listing the session, the week and each model, with the time
-  each resets.
-- **A simple view**, if you prefer: one provider's session limits, weekly limits or both,
-  in a pop-up drawn as a GNOME notification, with Refresh where its close button would be.
+  each resets, each window a GNOME notification card, with Refresh where the first one's
+  close button would be. Or no tabs: pick one provider in the preferences.
 - **The provider's own figures**, the same ones its command-line tool shows.
 - **An Ollama tab** listing the local server's models: which are in memory (how much, on
   the GPU or the CPU, the context, when each unloads), and for each model used this
