@@ -138,7 +138,7 @@ The figures are kept in `ollama-<shell pid>.json` under
 `$XDG_RUNTIME_DIR/ai-usage/` (`sessionFile()`), written after any sample that
 changed something, read back by the first read after an enable: a screen lock
 keeps them, a logout clears the runtime directory, and a nested shell, which shares
-the runtime directory, has a pid of its own. The kit's staging sweep removes only
+the runtime directory, has a pid of its own. The staging sweep removes only
 `shell-<pid>` directories there, never these files.
 
 ## Renewing an expired login

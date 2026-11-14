@@ -5,7 +5,7 @@ description: See AI Usage in a throwaway nested GNOME Shell - its button in the 
 
 # Driving AI Usage in a nested shell
 
-**Read `gnome-ext:nested-shell` first**: the loop (`start`, `do`, `reload`, `stop`), the
+**Read `nested-shell` first**: the loop (`start`, `do`, `reload`, `stop`), the
 steps and its settings are there. This is what is particular to AI Usage.
 
 ```bash

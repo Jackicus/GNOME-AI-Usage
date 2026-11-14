@@ -1,16 +1,5 @@
 {
   "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/kit.sh",
-            "timeout": 30
-          }
-        ]
-      }
-    ],
     "SessionEnd": [
       {
         "hooks": [
@@ -22,16 +11,5 @@
         ]
       }
     ]
-  },
-  "extraKnownMarketplaces": {
-    "gnome-extensions": {
-      "source": {
-        "source": "directory",
-        "path": "../.gnome-ai-kit"
-      }
-    }
-  },
-  "enabledPlugins": {
-    "gnome-ext@gnome-extensions": true
   }
 }

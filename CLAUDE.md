@@ -1,6 +1,6 @@
 # AI Usage
 
-Shared rules for every extension come from gnome-ai-kit: `../CLAUDE.md` and `../.claude/rules/` (loaded with this file), and the `gnome-ext:*` skills. `.claude/kit.sh` pulls the kit at session start, or, with no kit beside this repository, fetches it and prints its rules into the session.
+What holds for any extension worked on this way is in `.claude/rules/` (`workflow.md`, `live-session.md`, `simplicity.md`, `gjs-st.md`), loaded with this file, and the skills are in `.claude/skills/`.
 
 A GNOME Shell extension (UUID `ai-usage@jackicus`, `version-name` 0.3, shell 51)
 that puts one button in the top bar, with a tab per AI subscription in its pop-up,
@@ -64,7 +64,7 @@ tests/fixtures/         saved responses (invented values), for `make parsers`
 ```
 
 What ships is `./scripts/ext.conf`'s `EXT_SHIP` (`lib/` with `lib/providers/`).
-The kit's `./scripts/dev-extension.js`, the `make link` entry point, also turns
+`./scripts/dev-extension.js`, the `make link` entry point, also turns
 the debug log on (`lib/log.js`'s `setVerbose`).
 
 ## How it behaves
@@ -150,7 +150,7 @@ not an animation, so `_renderPanel()` calls `close()` bare.
 
 ## Verifying
 
-* `make check` runs, after the kit's lint and schema, `EXT_CHECKS` from
+* `make check` runs, after the lint and schema, `EXT_CHECKS` from
   `./scripts/dev.d/`:
   * `parsers`: each provider's parser over `tests/fixtures/`, including that
     unknown shapes degrade rather than throw.
