@@ -46,7 +46,7 @@ paths:
   `usage.js`), then the rest at one line each. No bar: nothing there is a share of a
   limit.
 * Dimming is actor opacity (`DIM_OPACITY`).
-* **Its exception to the kit's colour rule**: the bar track's mid grey and
+* **Its exception to `gjs-st.md`'s colour rule**: the bar track's mid grey and
   GNOME's own warning/critical palette are the only flat colours, since St names no
   warning colour. The bars are Yellow 5 `#e5a50a` and Red 4 `#e01b24`; the figures
   are text, so they take libadwaita's warning and error colours (`#9c6e03`, `#c01c28`)

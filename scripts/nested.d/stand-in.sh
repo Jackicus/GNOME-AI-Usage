@@ -11,7 +11,7 @@
 #
 
 # The stand-in world for 'start --stand-in' (and so 'shots'), since the pictures go into a public
-# repository. On top of the kit's scratch HOME and stand-in CLIs: stand-in logins, where every token
+# repository. On top of nested.sh's scratch HOME and stand-in CLIs: stand-in logins, where every token
 # is the word "stand-in" (Codex's wrapped as a JWT, whose claims codex.js reads), and
 # scripts/stand-in-http.js staged over lib/http.js. A provider with no answer there shows as unavailable.
 
