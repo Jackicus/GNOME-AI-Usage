@@ -17,14 +17,14 @@ most 16, and `session-modes` is absent: a screen lock disables the extension.
 
 ## The review guidelines, checked against this code
 
-Checked on 2026-10-08 against the
+Checked on 2026-11-14 against the
 [Review Guidelines](https://gjs.guide/extensions/review-guidelines/review-guidelines.html) and
 [Best Practices](https://gjs.guide/extensions/review-guidelines/best-practices.html), on the
 zip `make pack` builds. No blockers.
 
 - **Lifecycle.** `extension.js` builds `AiUsageApp` in `enable()`; module scope holds constants
-  and the class registration. `disable()` removes the poll timer and the debounce source,
-  cancels a read in flight, disconnects the extension's, the desktop interface's and each
+  and the class registration. `disable()` removes the poll timer, the local sampling timer and
+  the debounce source, cancels a read or a sample in flight, disconnects the extension's, the desktop interface's and each
   provider's settings, destroys the button, cancels the login file monitors, unsubscribes from
   the secret service's signals and aborts the HTTP session.
 - **Imports.** No `ByteArray`, `Lang` or `Mainloop`; no `Gdk`, `Gtk` or `Adw` in the shell
@@ -36,7 +36,8 @@ zip `make pack` builds. No blockers.
 - **Logging.** Failures only. `Log.debug` prints under the `make link` development entry point.
 - **Subprocesses.** One: `timeout 60 claude doctor` or `codex doctor` when the refresh button
   is pressed on an expired login, and once when a login expires unless "Wait until the tool is
-  opened" is on (off by default), so the tool refreshes its own login. Its output
+  opened" is on (off by default), so the tool refreshes its own login. Never two at once per
+  provider. Its output
   is discarded and it exits by itself. The description and README say so. No `run_dispose()`,
   privileged process or clipboard use.
 - **Other extensions.** None touched.
@@ -44,10 +45,14 @@ zip `make pack` builds. No blockers.
   is read (a file, or the system keyring for Antigravity, and for Codex when it has no file)
   and sent to that provider's endpoint: `api.anthropic.com`,
   `daily-cloudcode-pa.googleapis.com` (`cloudcode-pa.googleapis.com` for a GCP login),
-  `chatgpt.com`. Nothing else is sent, no token is kept, logged or refreshed, and no provider
+  `chatgpt.com`. The Ollama tab asks only the local Ollama server (`127.0.0.1:11434`, or
+  `OLLAMA_HOST`) every 15 s and reads no login. Nothing else is sent, no token is kept, logged or refreshed, and no provider
   file or keyring item is written. The keyring is only read, through libsecret, asynchronously,
   and its `Collection` signals are watched only to read again when a CLI rewrites its login.
   No telemetry.
+- **Files written.** Only the Ollama tab's figures for this session,
+  `$XDG_RUNTIME_DIR/ai-usage/ollama-<shell pid>.json`, asynchronously; the runtime directory
+  is cleared at logout. The description and README say so.
 - **Schemas.** `org.gnome.shell.extensions.ai-usage` at `/org/gnome/shell/extensions/ai-usage/`
   and a relocatable per-provider schema under it, in one XML file;
   `glib-compile-schemas --strict` passes.
