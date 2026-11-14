@@ -71,7 +71,8 @@ makes itself:
 | Ollama | nothing: it asks the server which models it has and holds | the Ollama server, `127.0.0.1:11434` or `OLLAMA_HOST` |
 
 Nothing else goes anywhere. It never writes to these files, keeps a token or logs one, and
-the only process it starts is the tool's `doctor`. These endpoints are not published APIs,
+the only process it starts is the tool's `doctor`. The one file it writes is the Ollama tab's
+figures for this session, `$XDG_RUNTIME_DIR/ai-usage/ollama-<pid>.json`, which is gone at logout. These endpoints are not published APIs,
 so a provider may change them; the pop-up then says the usage could not be read.
 
 ## Install
