@@ -5,6 +5,7 @@ import Pango from 'gi://Pango';
 import St from 'gi://St';
 
 import * as BarLevel from 'resource:///org/gnome/shell/ui/barLevel.js';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
@@ -73,6 +74,20 @@ class UsageIndicator extends PanelMenu.Button {
         this._section.box.add_style_class_name('ai-usage-cards');
         this.menu.addMenuItem(this._tabsItem);
         this.menu.addMenuItem(this._section);
+
+        St.Settings.get().connectObject('notify::color-scheme', () => this._syncScheme(), this);
+        this._syncScheme();
+    }
+
+    // Warning and critical text takes darker colours on a light top bar and pop-up.
+    _syncScheme() {
+        const light = Main.getStyleVariant() === 'light';
+        for (const actor of [this, this.menu.box]) {
+            if (light)
+                actor.add_style_class_name('ai-usage-light');
+            else
+                actor.remove_style_class_name('ai-usage-light');
+        }
     }
 
     // entries: [{id, name, reading}] per live provider; reading is null until it answers.
