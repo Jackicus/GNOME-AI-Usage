@@ -5,13 +5,23 @@
     font-feature-settings: "tnum";
 }
 
-/* GNOME's Yellow 5 and Red 4: St names no warning colour. */
+/* St names no warning colour. Text takes libadwaita's warning and error colours on the
+   light scheme, and on the dark Yellow 5 and libadwaita's error colour, which read better
+   on the dark cards than its warning colour; the bars are Yellow 5 and Red 4. */
 .ai-usage-warning {
     color: #e5a50a;
 }
 
 .ai-usage-critical {
-    color: #e01b24;
+    color: #ff938c;
+}
+
+.ai-usage-light .ai-usage-warning {
+    color: #9c6e03;
+}
+
+.ai-usage-light .ai-usage-critical {
+    color: #c01c28;
 }
 
 /* The width is fixed, so the pop-up does not move when another provider's tab is chosen,

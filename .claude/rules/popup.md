@@ -47,8 +47,11 @@ paths:
   limit.
 * Dimming is actor opacity (`DIM_OPACITY`).
 * **Its exception to the kit's colour rule**: the bar track's mid grey and
-  GNOME's own warning/critical palette (Yellow 5 `#e5a50a`, Red 4 `#e01b24`) are
-  the only flat colours, since St names no warning colour. A normal bar is
-  `-st-accent-color`. No foreground colour is hardcoded.
+  GNOME's own warning/critical palette are the only flat colours, since St names no
+  warning colour. The bars are Yellow 5 `#e5a50a` and Red 4 `#e01b24`; the figures
+  are text, so they take libadwaita's warning and error colours (`#9c6e03`, `#c01c28`)
+  under `.ai-usage-light`, which `_syncScheme()` sets from `Main.getStyleVariant()`,
+  and Yellow 5 and `#ff938c` on dark. A normal bar is `-st-accent-color`. No other
+  foreground colour is hardcoded.
 * Paddings are px measured from the shell's own theme (`.popup-menu-item`,
   `.quick-settings`), each with its reason beside it.
