@@ -72,8 +72,14 @@ export default class AiUsagePreferences extends ExtensionPreferences {
         ]);
         choice.subtitle = 'From tabs in the pop-up, or here, which reads that provider alone.';
         popup.add(choice);
-        const provider = comboRow(settings, 'chosen-provider', 'Provider',
-            PROVIDERS.map(p => [p.id, p.displayName]));
+        // Installed providers, and the chosen one marked if its tool has gone since.
+        const chosen = settings.get_string('chosen-provider');
+        const offered = PROVIDERS.flatMap(p => {
+            if (GLib.find_program_in_path(p.cli))
+                return [[p.id, p.displayName]];
+            return p.id === chosen ? [[p.id, `${p.displayName} (not installed)`]] : [];
+        });
+        const provider = comboRow(settings, 'chosen-provider', 'Provider', offered);
         popup.add(provider);
         const tabs = comboRow(settings, 'tab-position', 'Provider tabs', [
             ['top', 'At the top'],
