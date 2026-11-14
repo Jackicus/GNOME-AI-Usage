@@ -25,8 +25,7 @@ export default class AiUsagePreferences extends ExtensionPreferences {
 
         const place = new Adw.PreferencesGroup({
             title: 'Where it sits',
-            description: 'The button goes in the chosen part of the top bar. Which neighbours it lands '
-                + 'between also depends on what other extensions have put there.',
+            description: 'Other extensions in the same part can change its neighbours.',
         });
         place.add(comboRow(settings, 'panel-box', 'Part of the top bar', [
             ['left', 'Left'],
@@ -34,12 +33,12 @@ export default class AiUsagePreferences extends ExtensionPreferences {
             ['right', 'Right'],
         ]));
         place.add(spinRow(settings, 'panel-index', 'Position',
-            'Its place in that part, counted from the left; -1 puts it at the right end.', -1, 20));
+            'Counted from the left. −1 is the right end.', -1, 20));
         page.add(place);
 
         const shown = new Adw.PreferencesGroup({
             title: 'What it shows',
-            description: 'The single figure on the button itself, for the provider whose tab is selected.',
+            description: 'For the provider whose tab is selected.',
         });
         shown.add(comboRow(settings, 'primary-limit', 'Figure on the button', [
             ['highest', 'Whichever is highest'],
@@ -47,30 +46,25 @@ export default class AiUsagePreferences extends ExtensionPreferences {
             ['weekly', 'This week'],
         ]));
         shown.add(switchRow(settings, 'show-percent', 'Show the percentage',
-            'With this off the button shows only its label, tinted by how much has been used.'));
+            'Without it the label alone is tinted by use.'));
         const label = comboRow(settings, 'button-label', 'Beside the percentage', [
             ['plan', 'Plan name'],
             ['icon', 'An icon'],
             ['none', 'Nothing'],
         ]);
-        label.subtitle = 'The plan, such as Pro, is then not repeated on the cards. With nothing to show it reads “AI”.';
+        label.subtitle = 'A plan shown here is left off the cards.';
         shown.add(label);
         shown.add(iconRow(settings));
         shown.add(switchRow(settings, 'hide-unavailable', 'Hide a provider with nothing to show',
-            'Signed out, login expired or unreadable. The tool refreshes its login only while it runs, '
-            + 'so its tab returns by itself once you have used it. With none left the button goes too.'));
+            'Signed out, expired or unreadable, until it can be read again.'));
         page.add(shown);
 
-        const popup = new Adw.PreferencesGroup({
-            title: 'The pop-up',
-            description: 'Every limit carries the time it resets, worded the same in the pop-up and in '
-                + 'notifications. An exact time is in your own timezone, on the clock your desktop is set to.',
-        });
+        const popup = new Adw.PreferencesGroup({title: 'The pop-up'});
         const choice = comboRow(settings, 'provider-choice', 'Choose the provider', [
             ['tabs', 'From tabs'],
             ['preferences', 'Here'],
         ]);
-        choice.subtitle = 'From tabs in the pop-up, or here, which reads that provider alone.';
+        choice.subtitle = 'Here reads only the provider chosen below.';
         popup.add(choice);
         // Installed providers, and the chosen one marked if its tool has gone since.
         const chosen = settings.get_string('chosen-provider');
@@ -102,7 +96,7 @@ export default class AiUsagePreferences extends ExtensionPreferences {
             ['absolute', 'Time of day'],
             ['both', 'Both'],
         ]);
-        reset.subtitle = 'Automatic is a countdown when the reset is less than a day away, the time when it is not.';
+        reset.subtitle = 'Automatic counts down when a reset is under a day away.';
         popup.add(reset);
         page.add(popup);
 
@@ -117,19 +111,30 @@ export default class AiUsagePreferences extends ExtensionPreferences {
 
         const group = new Adw.PreferencesGroup({
             title: 'How often',
-            description: 'Opening the pop-up reads the figures again once they are a minute old, and so does signing in or refreshing your login, '
-                + 'so a long interval here still gives you fresh numbers whenever you look.',
+            description: 'Opening the pop-up or signing in also reads fresh figures.',
         });
         group.add(spinRow(settings, 'poll-seconds', 'Seconds between readings', null, 60, 3600, 30));
         page.add(group);
 
         const warnings = new Adw.PreferencesGroup({
             title: 'Warnings',
-            description: 'How much of a limit is used, in percent, before it is shown in amber, then red, and '
-                + 'before you are notified. A notification comes once for each limit, and not again until it resets.',
+            description: 'Percent of a limit used. Each limit notifies once until it resets.',
         });
-        warnings.add(spinRow(settings, 'warn-percent', 'Amber from', null, 1, 100));
-        warnings.add(spinRow(settings, 'critical-percent', 'Red from', null, 1, 100));
+        const amber = spinRow(settings, 'warn-percent', 'Amber from', null, 1, 100);
+        const red = spinRow(settings, 'critical-percent', 'Red from', null, 1, 100);
+        warnings.add(amber);
+        warnings.add(red);
+        // Amber above red would never show.
+        const syncRange = () => {
+            amber.adjustment.upper = settings.get_int('critical-percent') - 1;
+            red.adjustment.lower = settings.get_int('warn-percent') + 1;
+        };
+        syncRange();
+        const rangeId = settings.connect('changed', (_s, key) => {
+            if (key === 'warn-percent' || key === 'critical-percent')
+                syncRange();
+        });
+        page.connect('destroy', () => settings.disconnect(rangeId));
         warnings.add(spinRow(settings, 'notify-percent', 'Notify from', 'Zero turns notifications off.', 0, 100));
         page.add(warnings);
 
@@ -144,10 +149,7 @@ export default class AiUsagePreferences extends ExtensionPreferences {
 
         const group = new Adw.PreferencesGroup({
             title: 'Providers',
-            description: 'This extension never signs you in and never stores a password. It reads the login that each '
-                + "provider's own command-line tool has already saved, so signing in and out stays in one place. "
-                + 'A provider needs that tool installed and already signed in, and is offered once it is installed. '
-                + 'Ollama needs no login: its tab reads the local server.',
+            description: 'Each is read from the login its own command-line tool has saved. Nothing here signs you in.',
         });
 
         for (const provider of PROVIDERS)
@@ -157,14 +159,12 @@ export default class AiUsagePreferences extends ExtensionPreferences {
 
         const renew = new Adw.PreferencesGroup({
             title: 'Expired logins',
-            description: 'Claude Code and Codex renew their login only when they run, so after a few hours away, '
-                + 'as at login, it has lapsed. The extension then runs "claude doctor" or "codex doctor" once, which '
-                + 'makes the tool refresh it. Not available for Antigravity.',
+            description: 'Claude Code and Codex renew their login only while they run. When it expires, '
+                + 'the extension runs their doctor command once to renew it.',
         });
         const wait = new Adw.SwitchRow({
             title: 'Wait until the tool is opened',
-            subtitle: 'Leaves an expired login until you next use Claude Code or Codex. '
-                + 'The refresh button in the pop-up still renews it.',
+            subtitle: 'The refresh button in the pop-up still renews it.',
         });
         settings.bind('renew-login', wait, 'active', Gio.SettingsBindFlags.INVERT_BOOLEAN);
         renew.add(wait);
