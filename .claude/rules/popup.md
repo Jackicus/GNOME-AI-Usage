@@ -34,6 +34,9 @@ paths:
   spacing, and the pop-up's corners are the message's 16px plus that gap, 28px, so they
   run concentric. The header-less card drops the theme's 12px above a message body that
   comes first, so it is as far in at the top as at the sides.
+* **The cards' box is also a `.message-list`**, with that class's width and side border,
+  margin and padding cancelled: themes such as Blur My Shell's paint `.message` the menu's
+  colour and give a notification card its own only under `.message-list .message`.
 * The menu has a fixed `width`, wide enough for the longest label, so
   it does not move when another tab is chosen.
 * The bars are the shell's `BarLevel`, drawn from `-barlevel-*` properties on
