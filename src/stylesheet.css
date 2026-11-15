@@ -40,6 +40,16 @@
     spacing: 12px;
 }
 
+/* The cards' box is a .message-list too, and drops the width and the side border,
+   margin and padding the theme gives the notification list. */
+.ai-usage-cards.message-list:ltr,
+.ai-usage-cards.message-list:rtl {
+    width: auto;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+}
+
 .ai-usage-tabs-row,
 .ai-usage-card {
     margin: 0;

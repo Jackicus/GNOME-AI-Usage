@@ -71,7 +71,9 @@ class UsageIndicator extends PanelMenu.Button {
         this._tabsItem = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false, style_class: 'ai-usage-tabs-row'});
         this._tabsItem.add_child(this._tabs);
         this._section = new PopupMenu.PopupMenuSection();
-        this._section.box.add_style_class_name('ai-usage-cards');
+        // Also a .message-list, for themes (Blur My Shell's) that draw a notification
+        // card apart from the menu only inside the notification list.
+        this._section.box.add_style_class_name('ai-usage-cards message-list');
         this.menu.addMenuItem(this._tabsItem);
         this.menu.addMenuItem(this._section);
 
