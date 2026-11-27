@@ -74,6 +74,8 @@ class UsageIndicator extends PanelMenu.Button {
         // Also a .message-list, for themes (Blur My Shell's) that draw a notification
         // card apart from the menu only inside the notification list.
         this._section.box.add_style_class_name('ai-usage-cards message-list');
+        // Every card in a tab as tall as the tallest.
+        this._section.box.layout_manager.homogeneous = true;
         this.menu.addMenuItem(this._tabsItem);
         this.menu.addMenuItem(this._section);
 
@@ -241,6 +243,8 @@ function cardItem(title, plan, refresh, children) {
         can_focus: false,
         style_class: 'message ai-usage-card',
     });
+    // The menu item centres itself in the box's equal share unless it expands.
+    item.y_expand = true;
     const column = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, x_expand: true});
 
     if (title || refresh) {
