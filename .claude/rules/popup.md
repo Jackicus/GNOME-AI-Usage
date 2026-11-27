@@ -30,6 +30,9 @@ paths:
   `Weekly` card, and Ollama's lists a `This session` and an `Installed` card. The item
   is sensitive but inert (`activate: false`, `hover: false`): St makes an insensitive
   one `:insensitive`, and `.message:insensitive` outranks `.message`, darkening it.
+* **Every card in a tab is as tall as the tallest** (the cards' box is `homogeneous`, each
+  card `y_expand`, which it needs to fill its share rather than centre in it), the rows
+  at the top.
 * **The cards sit 12px apart and 12px from the pop-up's edge**, the notification list's
   spacing, and the pop-up's corners are the message's 16px plus that gap, 28px, so they
   run concentric. The header-less card drops the theme's 12px above a message body that
